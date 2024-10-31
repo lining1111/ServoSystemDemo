@@ -1,0 +1,13 @@
+[requires]
+gflags/2.2.2
+glog/0.6.0
+fmt/9.0.0
+poco/1.12.0
+xpack/1.0.4
+mini/0.9.16
+[options]
+poco*:enable_data_mysql=False
+glog*:with_unwind=False
+[generators]
+CMakeDeps
+CMakeToolchain

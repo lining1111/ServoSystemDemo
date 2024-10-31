@@ -1,0 +1,2 @@
+systemctl disable ServoSystemDemo
+killall ServoSystemDemo
