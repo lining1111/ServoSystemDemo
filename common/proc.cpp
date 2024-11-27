@@ -118,7 +118,7 @@ public:
 
     //后处理，返回结果
     void enc() {
-        if (rsp != nullptr && rsp->state != State_CmdExeSuccess) {
+        if (rsp != nullptr && rsp->state != State_CmdExeNoRsp) {
             rsp->guid = req->guid;
             //code 以Req开头的，Req为Rsp
             if (req->code.find("Req") == 0) {

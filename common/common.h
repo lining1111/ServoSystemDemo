@@ -75,7 +75,7 @@ namespace common {
         State_ParamErr = -102,//获取参数失败
         State_NotFindCmd = -101,//未找到cmd
         State_UnmarshalFail = -100,//协议反序列化失败
-        State_CmdExeSuccess = 100,//此状态下，执行完不用回复客户端
+        State_CmdExeNoRsp = 100,//此状态下，执行完不用回复客户端
         State_Success = 0,//成功
         State_Null = -1,//模块为null,未初始化
         State_Unconnect = -2,//未连接
