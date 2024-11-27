@@ -62,7 +62,7 @@ void LocalBusiness::addConn(MyTcpServerHandler *p) {
     _conns.push_back(p);
 }
 
-void LocalBusiness::delConn(const string& peerAddress) {
+void LocalBusiness::delConn(const string &peerAddress) {
     std::unique_lock<std::mutex> lock(mtx);
     for (int i = 0; i < _conns.size(); i++) {
         if (_conns.at(i) != nullptr) {
@@ -89,7 +89,7 @@ void LocalBusiness::stopAllConns() {
     }
 }
 
-void LocalBusiness::Broadcast(const string& msg) {
+void LocalBusiness::Broadcast(const string &msg) {
     std::unique_lock<std::mutex> lock(mtx);
     for (auto iter: _conns) {
         if (iter != nullptr) {
@@ -101,12 +101,14 @@ void LocalBusiness::Broadcast(const string& msg) {
     if (!localBusiness->clientList.empty()) {
         for (auto iter: localBusiness->clientList) {
             auto c = iter.second;
-            c->SendBase(msg);
+            if (!c->isNeedReconnect) {
+                c->SendBase(msg);
+            }
         }
     }
 }
 
-int LocalBusiness::SendToClient(const string& peerAddress, const string& msg) {
+int LocalBusiness::SendToClient(const string &peerAddress, const string &msg) {
     int ret = -1;
     bool isRemoteClient = false;
     //先看下是不是对端的客户端
@@ -125,7 +127,7 @@ int LocalBusiness::SendToClient(const string& peerAddress, const string& msg) {
         if (!localBusiness->clientList.empty()) {
             for (auto iter: localBusiness->clientList) {
                 auto c = iter.second;
-                if (c->_peerAddress == peerAddress) {
+                if (c->_peerAddress == peerAddress && !c->isNeedReconnect) {
                     ret = c->SendBase(msg);
                 }
             }
@@ -135,7 +137,7 @@ int LocalBusiness::SendToClient(const string& peerAddress, const string& msg) {
     return ret;
 }
 
-void *LocalBusiness::FindClient(const string& peerAddress) {
+void *LocalBusiness::FindClient(const string &peerAddress) {
     void *ret = nullptr;
     bool isRemoteClient = false;
     //先看下是不是对端的客户端

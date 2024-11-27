@@ -119,6 +119,14 @@ public:
     //后处理，返回结果
     void enc() {
         if (rsp != nullptr && rsp->state != State_CmdExeSuccess) {
+            rsp->guid = req->guid;
+            //code 以Req开头的，Req为Rsp
+            if (req->code.find("Req") == 0) {
+                rsp->code = "Rsp" + req->code.substr(3);
+            } else {
+                rsp->code = req->code;
+            }
+
             string pkg = json::encode(*rsp);
             auto localBusiness = LocalBusiness::instance();
             if (localBusiness->SendToClient(_handler, pkg) != 0) {
@@ -154,6 +162,7 @@ int Handle##xxx(const string &h, const string &content) { \
     return handler.exe(h, content);          \
 }                                           \
 
+
 class HandlerHeartbeat : public Handler<Com, Com> {
 public:
     void proc() final {
@@ -162,13 +171,11 @@ public:
         if (client != nullptr) {
             ((MyTcpHandler *) client)->timeRecv = getTimestampMs();
         }
-        rsp->code = "HeartBeat";
         rsp->param = "rsp";
     }
 };
 
 Handle(Heartbeat)
-
 
 
 map<string, Handle> HandleRouter = {

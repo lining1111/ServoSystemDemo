@@ -118,14 +118,22 @@ private:
         return 0;
     }
 
-   
+
     static int ThreadProcessPkg(MyTcpHandler *local) {
         LOG(WARNING) << local->_peerAddress << " ThreadProcessPkg start";
         while (local->_isRun) {
             Poco::AutoPtr<MsgNotification> pNf = dynamic_cast<MsgNotification *>(local->_pkgs.waitDequeueNotification());
             if (pNf) {
                 string pkg = pNf->message();
+                if (pkg.empty()) {
+                    continue;
+                }
                 //按照cmd分别处理
+                auto guid = common::parseGUID(pkg);
+                if (guid.empty()) {
+                    guid = getGuid();
+                }
+
                 auto code = common::parseCode(pkg);
                 if (!code.empty()) {
                     auto iter = HandleRouter.find(code);
@@ -136,6 +144,7 @@ private:
                         //最后没有对应的方法名
                         LOG(ERROR) << local->_peerAddress << " 最后没有对应的方法名:" << code << ",内容:" << pkg;
                         Com rsp;
+                        rsp.guid = guid;
                         rsp.code = code;
                         rsp.state = State_UnmarshalFail;
                         rsp.param = "code not find:" + code;
@@ -144,6 +153,7 @@ private:
                     }
                 } else {
                     Com rsp;
+                    rsp.guid = guid;
                     rsp.code = "";
                     rsp.state = State_UnmarshalFail;
                     rsp.param = "code empty";

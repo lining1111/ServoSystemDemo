@@ -62,6 +62,8 @@ namespace common {
     
     string parseCode(const string &pkg);
 
+    string parseGUID(const string &pkg);
+
     /*
      * 回复data中state枚举
      * 0：成功 其他，失败，具体情况按指来定，
