@@ -128,7 +128,7 @@ public:
             }
 
             string pkg = json::encode(*rsp);
-            auto localBusiness = LocalBusiness::instance();
+            auto localBusiness = LocalBusiness::instance()
             if (localBusiness->SendToClient(_handler, pkg) != 0) {
                 VLOG(3) << _handler << " send failed:" << pkg;
             } else {

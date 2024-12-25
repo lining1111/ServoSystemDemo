@@ -39,3 +39,5 @@ list(REMOVE_ITEM SRC_FILES ./main.cpp)
 add_executable(ServoSystemDemo main.cpp ${SRC_FILES})
 target_link_libraries(ServoSystemDemo ${LIBS})
 redefine_file_macro(ServoSystemDemo)
+
+add_subdirectory(test)
