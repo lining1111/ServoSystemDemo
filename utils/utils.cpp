@@ -88,21 +88,21 @@ string getGuid() {
 
 
 // 取文件夹名字 无后缀
-string getFolderPath(const string& str) {
+string getFolderPath(const string &str) {
     string::size_type idx = str.rfind('/', str.length());
     string folder = str.substr(0, idx);
     return folder;
 }
 
 // 取后缀
-string getFileSuffix(const string& str) {
+string getFileSuffix(const string &str) {
     string::size_type idx = str.rfind('.', str.length());
     string suffix = str.substr(idx + 1, str.length());
     return suffix;
 }
 
 // 取文件名字 不包括后缀
-string getFileName(const string& str) {
+string getFileName(const string &str) {
     string::size_type idx = str.rfind('/', str.length());
     string::size_type pidx = str.rfind('.', str.length());
     string filename = str.substr(idx + 1, pidx - (idx + 1));
@@ -110,20 +110,20 @@ string getFileName(const string& str) {
 }
 
 // 去掉后缀
-string getRemoveSuffix(const string& str) {
+string getRemoveSuffix(const string &str) {
     string::size_type idx = str.rfind('.', str.length());
     string filename = str.substr(0, idx);
     return filename;
 }
 
 // 取文件名字 包括后缀
-string getFileNameAll(const string& str) {
+string getFileNameAll(const string &str) {
     string::size_type idx = str.rfind('/', str.length());
     string name_all = str.substr(idx + 1, str.length());
     return name_all;
 }
 
-int GetVectorFromFile(vector<uint8_t> &array, const string& filePath) {
+int GetVectorFromFile(vector<uint8_t> &array, const string &filePath) {
     ifstream fout;
     fout.open(filePath.c_str(), ios::in | ios::binary);
     if (fout.is_open()) {
@@ -140,7 +140,7 @@ int GetVectorFromFile(vector<uint8_t> &array, const string& filePath) {
     return 0;
 }
 
-int GetFileFromVector(vector<uint8_t> &array, const string& filePath) {
+int GetFileFromVector(vector<uint8_t> &array, const string &filePath) {
     fstream fin;
     fin.open(filePath.c_str(), ios::out | ios::binary | ios::trunc);
     if (fin.is_open()) {
@@ -180,23 +180,23 @@ void PrintHex(uint8_t *data, uint32_t len) {
     printf("\n");
 }
 
-wstring GbkToUnicode(const string& str) {
+wstring GbkToUnicode(const string &str) {
 //    codecvt_byname<wchar_t, char, mbstate_t>*dd=;
     wstring_convert<chs_codecvt> gbk(new chs_codecvt("zh_CN.GBK"));    //GBK - whar
 
     return gbk.from_bytes(str);
 }
 
-string GbkToUtf8(const string& str) {
+string GbkToUtf8(const string &str) {
     return UnicodeToUtf8(GbkToUnicode(str));
 }
 
-string Utf8ToGbk(const string& str) {
+string Utf8ToGbk(const string &str) {
     return UnicodeToGbk(Utf8ToUnicode(str));
 
 }
 
-wstring Utf8ToUnicode(const string& str) {
+wstring Utf8ToUnicode(const string &str) {
     wstring ret;
 
     wstring_convert<codecvt_utf8<wchar_t>> wcv;
@@ -204,14 +204,14 @@ wstring Utf8ToUnicode(const string& str) {
     return ret;
 }
 
-string UnicodeToUtf8(const wstring& wstr) {
+string UnicodeToUtf8(const wstring &wstr) {
     string ret;
     wstring_convert<codecvt_utf8<wchar_t>> wcv;
     ret = wcv.to_bytes(wstr);
     return ret;
 }
 
-string UnicodeToGbk(const wstring& wstr) {
+string UnicodeToGbk(const wstring &wstr) {
     wstring_convert<chs_codecvt> gbk(new chs_codecvt("zh_CN.GBK"));    //GBK - whar
     string ret = gbk.to_bytes(wstr);
     return ret;
@@ -428,7 +428,7 @@ string validIPAddress(string IP) {
     return "Neither";
 }
 
-void GetDirFiles(const string& path, vector<string> &array) {
+void GetDirFiles(const string &path, vector<string> &array) {
     DIR *dir;
     struct dirent *ptr;
     if ((dir = opendir(path.c_str())) == nullptr) {
@@ -447,7 +447,7 @@ void GetDirFiles(const string& path, vector<string> &array) {
     }
 }
 
-void CreatePath(const std::string& path) {
+void CreatePath(const std::string &path) {
 
     DIR *dir = nullptr;
     dir = opendir(path.c_str());
@@ -532,7 +532,7 @@ int memoryInfo(int &total, int &free) {
     return 0;
 }
 
-int dirInfo(const string& dir, int &total, int &free) {
+int dirInfo(const string &dir, int &total, int &free) {
     struct statfs diskInfo;
     // 设备挂载的节点
     if (statfs(dir.c_str(), &diskInfo) == 0) {
@@ -650,4 +650,18 @@ bool isProcessRun(string proc) {
     }
 
     return ret;
+}
+
+template<typename Func, typename... Args>
+auto measureExecutionTime(Func &&func, Args &&... args, double &elapsedTime) -> decltype(auto) {
+    // 使用std::chrono::high_resolution_clock获取高精度时间
+    auto start = std::chrono::high_resolution_clock::now();    // 调用函数并捕获其返回值
+    auto result = func(std::forward<Args>(args)...);    // 获取结束时间
+    auto end = std::chrono::high_resolution_clock::now();    // 计算持续时间并转换为微秒
+
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+    elapsedTime = static_cast<double>(duration.count()); // 转换为double
+    // 返回函数的执行结果
+    return result;
 }

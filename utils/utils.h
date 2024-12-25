@@ -72,9 +72,9 @@ wstring Utf8ToUnicode(const string &str);
 
 wstring GbkToUnicode(const string &str);
 
-string UnicodeToUtf8(const wstring& str);
+string UnicodeToUtf8(const wstring &str);
 
-string UnicodeToGbk(const wstring& str);
+string UnicodeToGbk(const wstring &str);
 
 
 void Trim(string &str, char trim);
@@ -97,10 +97,10 @@ bool isIPv6(string IP);
 
 string validIPAddress(string IP);
 
-void GetDirFiles(const string& path, vector<string> &array);
+void GetDirFiles(const string &path, vector<string> &array);
 
 //创建路径文件夹
-void CreatePath(const std::string& path);
+void CreatePath(const std::string &path);
 
 double cpuUtilizationRatio();
 
@@ -108,12 +108,16 @@ double cpuTemperature();
 
 int memoryInfo(int &total, int &free);
 
-int dirInfo(const string& dir, int &total, int &free);
+int dirInfo(const string &dir, int &total, int &free);
 
 int getMAC(string &mac);
 
 int getIpaddr(string &ethIp, string &n2nIp);
 
 bool isProcessRun(string proc);
+
+//计算函数执行耗时
+template<typename Func, typename... Args>
+auto measureExecutionTime(Func &&func, Args &&... args, double &elapsedTime) -> decltype(auto);
 
 #endif //UTILS_H
