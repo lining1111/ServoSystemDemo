@@ -128,7 +128,7 @@ public:
             }
 
             string pkg = json::encode(*rsp);
-            auto localBusiness = LocalBusiness::instance()
+            auto localBusiness = LocalBusiness::instance();
             if (localBusiness->SendToClient(_handler, pkg) != 0) {
                 VLOG(3) << _handler << " send failed:" << pkg;
             } else {
@@ -167,10 +167,31 @@ class HandlerHeartbeat : public Handler<Com, Com> {
 public:
     void proc() final {
         auto localBusiness = LocalBusiness::instance();
-        auto client = localBusiness->FindClient(_handler);
-        if (client != nullptr) {
-            ((MyTcpHandler *) client)->timeRecv = getTimestampMs();
+        LocalBusiness::CLIType cliType;
+        auto client = localBusiness->FindClient(_handler, cliType);
+
+        switch (cliType) {
+            case LocalBusiness::CT_LOCALTCP:
+            case LocalBusiness::CT_REMOTETCP: {
+                if (client != nullptr) {
+                    ((MyTcpHandler *) client)->timeRecv = getTimestampMs();
+                }
+            }
+                break;
+            case LocalBusiness::CT_LOCALWS: {
+                if (client != nullptr) {
+                    ((MyWebsocketClient *) client)->timeRecv = getTimestampMs();
+                }
+            }
+                break;
+            case LocalBusiness::CT_REMOTEWS: {
+                if (client != nullptr) {
+                    ((MyWebSocketRequestHandler *) client)->timeRecv = getTimestampMs();
+                }
+            }
+                break;
         }
+
         rsp->param = "rsp";
     }
 };

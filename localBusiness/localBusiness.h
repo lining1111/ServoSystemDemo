@@ -11,6 +11,8 @@
 #include "utils//timeTask.hpp"
 #include "myTcp/MyTcpClient.h"
 #include "myTcp/MyTcpServer.h"
+#include "myWebsocket/MyWebsocketServerHandler.h"
+#include "myWebsocket/MyWebsocketClient.h"
 
 using namespace std;
 
@@ -21,9 +23,13 @@ public:
     bool isRun = false;
     std::map<string, MyTcpServer *> serverList;
     std::map<string, MyTcpClient *> clientList;
+    std::map<string, MyWebsocketClient *> wsClientList;
 private:
     mutex mtx;
     vector<MyTcpServerHandler *> _conns;//接入的客户端数组
+
+    mutex mtx_ws;
+    vector<MyWebSocketRequestHandler *> _conns_ws;//接入的客户端数组
 
 public:
     static LocalBusiness *instance();
@@ -45,21 +51,44 @@ public:
 
     void AddClient(const string &name, const string &cloudIp, int cloudPort);
 
+    void AddClient_ws(const string &name, const string &cloudIp, int cloudPort);
+
     void Run();
 
     void Stop();
 
     void addConn(MyTcpServerHandler *p);
 
-    void delConn(const string& peerAddress);
+    void addConn_ws(MyWebSocketRequestHandler *p);
+
+    void delConn(const string &peerAddress);
+
+    void delConn_ws(const string &peerAddress);
 
     void stopAllConns();
 
-    void Broadcast(const string& msg);
+    void stopAllConns_ws();
 
-    int SendToClient(const string& peerAddress, const string& msg);
+    void Broadcast(const string &msg);
 
-    void *FindClient(const string& peerAddress);
+    int SendToClient(const string &peerAddress, const string &msg);
+
+    /*
+     * clientType
+     * 0 本地tcp客户端
+     * 1 远端tcp客户端
+     * 2 本地ws客户端
+     * 3 远端ws客户端
+     */
+
+    enum CLIType {
+        CT_LOCALTCP = 0,
+        CT_REMOTETCP = 1,
+        CT_LOCALWS = 2,
+        CT_REMOTEWS = 3,
+    };
+
+    void *FindClient(const string &peerAddress, CLIType &clientType);
 
     void kickoff(uint64_t timeout, uint64_t now);
 
