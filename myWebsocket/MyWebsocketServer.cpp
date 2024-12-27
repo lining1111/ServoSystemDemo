@@ -2,7 +2,7 @@
 // Created by lining on 12/27/24.
 //
 
-#include "MyWebsocketServerHandler.h"
+#include "MyWebsocketServer.h"
 #include "localBusiness/localBusiness.h"
 #include "common/common.h"
 #include "common/proc.h"
@@ -251,3 +251,46 @@ int MyWebSocketRequestHandler::ThreadProcessPkg(MyWebSocketRequestHandler *local
     return 0;
 }
 
+MyWebsocketServer::MyWebsocketServer(int port) : _port(port) {
+
+}
+
+MyWebsocketServer::~MyWebsocketServer() {
+    srv->stop();
+}
+
+int MyWebsocketServer::Open() {
+    try {
+        Poco::Net::ServerSocket ss(_port);
+        auto param = new Poco::Net::HTTPServerParams();
+        srv = new Poco::Net::HTTPServer(new MyWebsocketHandler, ss, param);
+    } catch (Poco::Exception &e) {
+        LOG(ERROR) << "ws server err:" << e.displayText();
+        return -1;
+    }
+    isListen = true;
+    return 0;
+}
+
+int MyWebsocketServer::ReOpen() {
+    try {
+        Poco::Net::ServerSocket ss(_port);
+        auto param = new Poco::Net::HTTPServerParams();
+        srv = new Poco::Net::HTTPServer(new MyWebsocketHandler, ss, param);
+    } catch (Poco::Exception &e) {
+        LOG(ERROR) << "ws server err:" << e.displayText();
+        return -1;
+    }
+    isListen = true;
+    return 0;
+}
+
+int MyWebsocketServer::Run() {
+    srv->start();
+    return 0;
+}
+
+int MyWebsocketServer::Stop() {
+    srv->stop();
+    return 0;
+}

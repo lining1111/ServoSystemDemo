@@ -19,6 +19,11 @@ void LocalBusiness::AddServer(const string &name, int port) {
     serverList.insert(make_pair(name, server));
 }
 
+void LocalBusiness::AddServer_ws(const string &name, int port) {
+    auto server = new MyWebsocketServer(port);
+    wsServerList.insert(make_pair(name, server));
+}
+
 void LocalBusiness::AddClient(const string &name, const string &cloudIp, int cloudPort) {
     auto client = new MyTcpClient(cloudIp, cloudPort);//端口号和ip依实际情况而变
     clientList.insert(make_pair(name, client));
@@ -38,6 +43,15 @@ void LocalBusiness::Run() {
         s->Run();
         std::this_thread::sleep_for(std::chrono::milliseconds(3 * 1000));
     }
+
+    for (auto &iter: wsServerList) {
+        auto s = iter.second;
+        if (s->Open() == 0) {
+            s->Run();
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(3 * 1000));
+    }
+
     for (auto &iter: clientList) {
         auto client = iter.second;
         if (client->Open() == 0) {
@@ -311,7 +325,8 @@ void LocalBusiness::Task_Keep(void *p) {
     }
     auto local = (LocalBusiness *) p;
 
-    if (local->serverList.empty() && local->clientList.empty()) {
+    if (local->serverList.empty() && local->clientList.empty()
+    && local->wsServerList.empty() && local->wsClientList.empty()) {
         return;
     }
 
@@ -321,6 +336,21 @@ void LocalBusiness::Task_Keep(void *p) {
             if (!s->isListen) {
                 s->ReOpen();
                 if (s->isListen) {
+                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
+                                 << " 重启";
+                } else {
+                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
+                                 << " 重启失败";
+                }
+            }
+        }
+
+        for (auto &iter: local->wsServerList) {
+            auto s = iter.second;
+            if (!s->isListen) {
+                s->ReOpen();
+                if (s->isListen) {
+                    s->Run();
                     LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
                                  << " 重启";
                 } else {

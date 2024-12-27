@@ -11,7 +11,7 @@
 #include "utils//timeTask.hpp"
 #include "myTcp/MyTcpClient.h"
 #include "myTcp/MyTcpServer.h"
-#include "myWebsocket/MyWebsocketServerHandler.h"
+#include "myWebsocket/MyWebsocketServer.h"
 #include "myWebsocket/MyWebsocketClient.h"
 
 using namespace std;
@@ -23,6 +23,7 @@ public:
     bool isRun = false;
     std::map<string, MyTcpServer *> serverList;
     std::map<string, MyTcpClient *> clientList;
+    std::map<string, MyWebsocketServer *> wsServerList;
     std::map<string, MyWebsocketClient *> wsClientList;
 private:
     mutex mtx;
@@ -48,6 +49,8 @@ public:
     };
 
     void AddServer(const string &name, int port);
+
+    void AddServer_ws(const string &name, int port);
 
     void AddClient(const string &name, const string &cloudIp, int cloudPort);
 

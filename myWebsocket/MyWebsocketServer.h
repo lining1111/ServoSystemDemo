@@ -2,8 +2,8 @@
 // Created by lining on 12/27/24.
 //
 
-#ifndef MYWEBSOCKETSERVERHANDLER_H
-#define MYWEBSOCKETSERVERHANDLER_H
+#ifndef MYWEBSOCKETSERVER_H
+#define MYWEBSOCKETSERVER_H
 
 #include <mutex>
 #include <iostream>
@@ -83,5 +83,23 @@ private:
     std::size_t _bufSize;
 };
 
+class MyWebsocketServer {
+public:
+    int _port;
+    bool isListen = false;
+    Poco::Net::HTTPServer *srv = nullptr;
+    MyWebsocketServer(int port);
 
-#endif //MYWEBSOCKETSERVERHANDLER_H
+    ~MyWebsocketServer();
+
+    int Open();
+
+    int ReOpen();
+
+    int Run();
+
+    int Stop();
+};
+
+
+#endif //MYWEBSOCKETSERVER_H
