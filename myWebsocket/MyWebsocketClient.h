@@ -5,20 +5,15 @@
 #ifndef MYWEBSOCKETCLIENT_H
 #define MYWEBSOCKETCLIENT_H
 
-#include "Poco/Net/SocketReactor.h"
-#include "Poco/Net/SocketNotification.h"
-#include "Poco/Net/WebSocket.h"
-#include "Poco/Net/HTTPClientSession.h"
-#include "Poco/Net/HTTPRequestHandler.h"
-#include "Poco/Net/NetException.h"
-#include <Poco/Exception.h>
-#include "Poco/Observer.h"
-#include "Poco/NObserver.h"
+
 #include <glog/logging.h>
 #include <iostream>
 #include <string>
 #include <thread>
 #include <future>
+#include <Poco/Exception.h>
+#include "Poco/Net/WebSocket.h"
+#include "Poco/Net/HTTPClientSession.h"
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPResponse.h>
 
@@ -26,41 +21,34 @@
 
 using namespace std;
 
-using Poco::Net::SocketReactor;
-using Poco::Net::SocketNotification;
-using Poco::Net::ReadableNotification;
-using Poco::Net::WritableNotification;
-using Poco::Net::TimeoutNotification;
-using Poco::Net::ShutdownNotification;
-using Poco::Observer;
-using Poco::Net::NetException;
-using Poco::Net::ConnectionRefusedException;
-using Poco::Net::InvalidSocketException;
-using Poco::TimeoutException;
+using Poco::Net::WebSocket;
+using Poco::Net::HTTPClientSession;
+using Poco::Net::HTTPRequest;
+using Poco::Net::HTTPResponse;
 
 class MyWebsocketClient {
 private:
-    Poco::Net::HTTPClientSession *_cs;
-    Poco::Net::HTTPRequest *_req;
-    Poco::Net::HTTPResponse *_rsp;
-    Poco::Net::WebSocket *_ws;
+    HTTPClientSession *_cs;
+    HTTPRequest *_req;
+    HTTPResponse *_rsp;
+    WebSocket *_ws;
     std::mutex *mtx = nullptr;
     int BUFFER_SIZE = 1024 * 1024 * 4;
     FSM *_fsm = nullptr;
     Poco::NotificationQueue _pkgs;
     string _pkgCache;
+    char *recvBuf = nullptr;
+    bool _isRun = false;
+    bool isLocalThreadRun = false;
+    shared_future<int> future_t1;
+    shared_future<int> future_t2;
 public:
     string server_ip;
     int server_port;
     string _peerAddress;
     bool isNeedReconnect = true;
-    char *recvBuf = nullptr;
     std::thread _tRecv;
     std::thread _tHeartbeat;
-    bool _isRun = false;
-    bool isLocalThreadRun = false;
-    shared_future<int> future_t1;
-    shared_future<int> future_t2;
     uint64_t timeSend = 0;
     uint64_t timeRecv = 0;
 public:

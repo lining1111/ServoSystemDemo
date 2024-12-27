@@ -104,7 +104,7 @@ void LocalBusiness::delConn_ws(const string &peerAddress) {
         if (_conns_ws.at(i) != nullptr) {
             auto c = _conns_ws.at(i);
             if (c->_peerAddress == peerAddress) {
-                _conns.erase(_conns.begin() + i);
+                _conns_ws.erase(_conns_ws.begin() + i);
                 LOG(WARNING) << "从ws数组踢出客户端:" << peerAddress;
             }
         }

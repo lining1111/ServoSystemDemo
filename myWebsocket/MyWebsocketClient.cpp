@@ -199,8 +199,9 @@ int MyWebsocketClient::ThreadRecv(MyWebsocketClient *local) {
     while (local->_isRun) {
         memset(local->recvBuf, 0, 1024 * 1024);
         int recvLen = (local->_fsm->GetWriteLen() < (1024 * 1024)) ? local->_fsm->GetWriteLen() : (1024 * 1024);
-        int len = local->_ws->receiveBytes(local->recvBuf, recvLen);
-        if (len <= 0) {
+        int flags;
+        int len = local->_ws->receiveFrame(local->recvBuf, recvLen, flags);
+        if (len == 0 && flags == 0) {
             LOG(ERROR) << local->_peerAddress << " receiveBytes " << len;;
             local->isNeedReconnect = true;
         } else {
@@ -302,4 +303,3 @@ void MyWebsocketClient::ThreadHearbeat(MyWebsocketClient *local) {
     }
     LOG(WARNING) << local->_peerAddress << " heartbeat thread end";
 }
-

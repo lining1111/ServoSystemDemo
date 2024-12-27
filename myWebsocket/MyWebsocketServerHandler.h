@@ -7,43 +7,44 @@
 
 #include <mutex>
 #include <iostream>
-#include "Poco/Net/HTTPServer.h"
-#include "Poco/Net/HTTPServerSession.h"
-#include "Poco/Net/HTTPServerRequest.h"
-#include "Poco/Net/HTTPServerResponse.h"
-#include "Poco/Net/TCPServer.h"
-#include "Poco/Net/WebSocket.h"
-#include "Poco/Net/NetException.h"
-#include "Poco/Net/HTTPClientSession.h"
-#include "Poco/Net/HTTPRequestHandler.h"
-#include "Poco/Util/ServerApplication.h"
-#include "common/common.h"
-#include "common/proc.h"
-#include "common/config.h"
 #include "fsm/FSM.h"
 #include <future>
+#include "Poco/Net/NetException.h"
+#include "Poco/Net/HTTPServerRequest.h"
+#include "Poco/Net/HTTPServerResponse.h"
+#include "Poco/Net/WebSocket.h"
+#include "Poco/Net/HTTPRequestHandler.h"
+#include <Poco/Net/HTTPRequestHandlerFactory.h>
+#include <Poco/Net/ServerSocket.h>
+#include <Poco/Net/HTTPServer.h>
+
+using Poco::Net::WebSocket;
+using Poco::Net::HTTPRequestHandler;
+using Poco::Net::HTTPRequestHandlerFactory;
 
 using namespace Poco::Net;
 using namespace std;
 
 //websocket请求的处理
-class MyWebSocketRequestHandler : public Poco::Net::HTTPRequestHandler {
+class MyWebSocketRequestHandler : public HTTPRequestHandler {
 private:
+    size_t _bufSize;
+    WebSocket *_ws;
     std::mutex *mtx = nullptr;
-    int BUFFER_SIZE = 1024 * 1024 * 4;
     FSM *_fsm = nullptr;
     Poco::NotificationQueue _pkgs;
     string _pkgCache;
-public:
-    string _peerAddress;
     char *recvBuf = nullptr;
     bool _isRun = false;
     bool isLocalThreadRun = false;
     shared_future<int> future_t1;
     shared_future<int> future_t2;
+public:
+    string _peerAddress;
     uint64_t timeRecv = 0;
     uint64_t timeSend = 0;
-    MyWebSocketRequestHandler(size_t bufSize = 1024);
+
+    MyWebSocketRequestHandler(size_t bufSize = 1024 * 1024 * 4);
 
     ~MyWebSocketRequestHandler();
 
@@ -55,9 +56,6 @@ public:
     int Send(char *buf_send, int len_send);
 
 private:
-    size_t _bufSize;
-    WebSocket *_ws;
-
     void startBusiness();
 
     void stopBusiness();
@@ -71,13 +69,13 @@ private:
     static int ThreadProcessPkg(MyWebSocketRequestHandler *local);
 };
 
-class MyWebsocketHandler : public Poco::Net::HTTPRequestHandlerFactory {
+class MyWebsocketHandler : public HTTPRequestHandlerFactory {
 public:
-    MyWebsocketHandler(std::size_t bufSize = 1024) : _bufSize(bufSize) {
+    MyWebsocketHandler(std::size_t bufSize = 1024 * 1024 * 4) : _bufSize(bufSize) {
 
     }
 
-    Poco::Net::HTTPRequestHandler *createRequestHandler(const HTTPServerRequest &request) {
+    HTTPRequestHandler *createRequestHandler(const HTTPServerRequest &request) {
         return new MyWebSocketRequestHandler(_bufSize);
     }
 

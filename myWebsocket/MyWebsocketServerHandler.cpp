@@ -4,23 +4,26 @@
 
 #include "MyWebsocketServerHandler.h"
 #include "localBusiness/localBusiness.h"
+#include "common/common.h"
+#include "common/proc.h"
+#include "common/config.h"
 
 MyWebSocketRequestHandler::MyWebSocketRequestHandler(size_t bufSize) : _bufSize(bufSize) {
     recvBuf = new char[1024 * 1024];
     mtx = new mutex();
-    _fsm = new FSM(BUFFER_SIZE);
+    _fsm = new FSM(_bufSize);
     startBusiness();
 }
 
 MyWebSocketRequestHandler::~MyWebSocketRequestHandler() {
-    if (mtx != nullptr){
+    stopBusiness();
+    if (mtx != nullptr) {
         delete mtx;
     }
     if (_fsm != nullptr) {
         delete _fsm;
         _fsm = nullptr;
     }
-    stopBusiness();
     delete[]recvBuf;
     delete _ws;
 }
@@ -33,24 +36,23 @@ void MyWebSocketRequestHandler::handleRequest(HTTPServerRequest &request, HTTPSe
         _peerAddress = _ws->peerAddress().toString();
         auto localBusiness = LocalBusiness::instance();
         localBusiness->addConn_ws(this);
-        Poco::Buffer<char> buffer(_bufSize);
         int flags;
         int n;
         do {
             memset(recvBuf, 0, 1024 * 1024);
             int recvLen = (_fsm->GetWriteLen() < (1024 * 1024)) ? _fsm->GetWriteLen() : (1024 * 1024);
-            int len = _ws->receiveBytes(recvBuf, recvLen);
-            if (len <= 0) {
-
+            int flags;
+            int len = _ws->receiveFrame(recvBuf, recvLen, flags);
+            if (len == 0 && flags == 0) {
+                break;
             } else {
                 _fsm->TriggerAction(recvBuf, len);
             }
-//                std::string sSend = "hello, I'm WebSocket Server!";
-//                ws.sendFrame(sSend.c_str(), sSend.size(), flags);
         } while (n > 0 || (flags & WebSocket::FRAME_OP_BITMASK) != WebSocket::FRAME_OP_CLOSE);
         //将ws从客户端数组删除
         LOG(WARNING) << "websocket client disconnect:" << _ws->peerAddress().toString();
         localBusiness->delConn_ws(_ws->peerAddress().toString());
+        //!!!这里不要delete this 因为Poco会进入析构
     }
     catch (WebSocketException &exc) {
         switch (exc.code()) {
@@ -185,7 +187,6 @@ void MyWebSocketRequestHandler::Action() {
         }
     }
 }
-
 
 
 int MyWebSocketRequestHandler::ThreadStateMachine(MyWebSocketRequestHandler *local) {
