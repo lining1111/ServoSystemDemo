@@ -44,7 +44,7 @@ DEFINE_int32(port, 10001, "本地服务端端口号，默认10001");
 DEFINE_int32(keep, 5, "日志清理周期 单位day，默认5");
 DEFINE_bool(isSendSTDOUT, false, "输出到控制台，默认false");
 DEFINE_string(logDir, "log", "日志的输出目录,默认log");
-DEFINE_string(configFile, "./Config.ini", "配置文件路径，默认./Config.ini");
+DEFINE_string(configFile, "./config.yaml", "配置文件路径，默认./config.yaml");
 
 int main(int argc, char **argv) {
     gflags::SetVersionString(VERSION_BUILD_TIME);
@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 
     LOG(WARNING) << "程序工作目录:" << Poco::Path::current() << ",版本号:" << VERSION_BUILD_TIME;
     LOG(WARNING) << "获取程序参数:" << FLAGS_configFile;
-    if (localConfig.getDeviceConfigFromINI(FLAGS_configFile) != 0) {
+    if (localConfig.getDeviceConfigFromYAML(FLAGS_configFile) != 0) {
         LOG(ERROR) << "获取配置文件失败";
         return -1;
     }

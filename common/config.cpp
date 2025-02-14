@@ -39,26 +39,20 @@ bool LocalConfig::isShowMsgType(const string& msgType) {
     }
 }
 
-int LocalConfig::getDeviceConfigFromINI(const string& iniPath) {
+int LocalConfig::getDeviceConfigFromYAML(const string& path) {
     //判断文件是否存在
-    if (!std::ifstream(iniPath)) {
+    if (!std::ifstream(path)) {
         LOG(ERROR) << "ini file not exist";
         return -1;
     }
 
-    mINI::INIFile file(iniPath);
-    mINI::INIStructure iniStructure;
-    if (file.read(iniStructure)) {
-        {
-            string msgTypeArray = iniStructure["msgType"]["msg"];
-            _config.msgType = StringSplit(msgTypeArray, ",");
-        }
-        {
-            if (iniStructure["isCheckClient"]["check"] != "0") {
-                _config.isCheckClient = true;
-            }
-        }
+    try {
+        yaml::decode_file(path, this->_config);
+    } catch (exception &e) {
+        LOG(ERROR) << e.what();
+        return -1;
     }
+
 
     return 0;
 }

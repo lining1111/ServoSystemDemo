@@ -11,8 +11,10 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include "xpack/yaml.h"
 
 using namespace std;
+using namespace xpack;
 
 //配置类
 class LocalConfig {
@@ -20,6 +22,7 @@ public:
     typedef struct Config {
         vector<string> msgType;
         bool isCheckClient = false;
+    XPACK(O(msgType, isCheckClient));
     } Config;
 public:
     Config _config;
@@ -28,16 +31,16 @@ public:
 
     ~LocalConfig();
 
-    bool isShowMsgType(const string& msgType);
+    bool isShowMsgType(const string &msgType);
 
-    int getDeviceConfigFromINI(const string& iniPath);
+    int getDeviceConfigFromYAML(const string &path);
 };
 
 extern LocalConfig localConfig;
 
 class Device {
 public:
-    string  g_user;//需要回复的客户端地址
+    string g_user;//需要回复的客户端地址
 public:
     Device();
 

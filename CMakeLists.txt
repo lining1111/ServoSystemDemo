@@ -10,16 +10,20 @@ configure_file("${PROJECT_SOURCE_DIR}/version.h.in" "${PROJECT_SOURCE_DIR}/versi
 message("ARCH ${ARCH}")
 
 include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/3rd_libs)
 
 find_package(gflags REQUIRED)
 find_package(glog REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(fmt REQUIRED)
 find_package(Poco REQUIRED)
-find_package(xpack REQUIRED)
+find_package(yaml-cpp REQUIRED)
 find_package(mini REQUIRED)
+find_package(CURL REQUIRED)
+find_package(OpenSSL REQUIRED)
+find_package(indicators REQUIRED)
 
-set(LIBS m pthread gflags::gflags glog::glog SQLite::SQLite3 fmt::fmt Poco::Poco xpack::xpack mini::mini)
+set(LIBS m pthread gflags::gflags glog::glog SQLite::SQLite3 fmt::fmt Poco::Poco yaml-cpp mini::mini CURL::libcurl openssl::openssl indicators::indicators)
 
 
 #cmake依赖
@@ -28,7 +32,7 @@ include(utility)
 include(CPM)
 
 ##源文件列表相关
-set(filtration_dirlist cmake-build-debug .idea .git conan cmake scripts test)
+set(filtration_dirlist cmake-build-debug .idea .git conan cmake scripts test 3rd_libs)
 SUBDIRLISTINCLUDE(SRC_DIRS ${CMAKE_SOURCE_DIR} 2 ${filtration_dirlist})
 message(STATUS "SRC_DIRS:${SRC_DIRS}")
 foreach (src_dir ${SRC_DIRS})

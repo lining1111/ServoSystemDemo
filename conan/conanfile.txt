@@ -3,8 +3,11 @@ gflags/2.2.2
 glog/0.6.0
 fmt/9.0.0
 poco/1.12.0
-xpack/1.0.4
+yaml-cpp/0.8.0
 mini/0.9.16
+indicators/2.3
+libcurl/8.2.1
+openssl/3.1.2
 [options]
 poco*:enable_data_mysql=False
 glog*:with_unwind=False
