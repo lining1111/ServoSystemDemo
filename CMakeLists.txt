@@ -25,15 +25,6 @@ include(${CPM_DOWNLOAD_LOCATION})
 message("ARCH ${ARCH}")
 
 
-# https://github.com/hyperic/sigar
-# System Information Gatherer And Reporter
-CPMAddPackage(
-    NAME sigar
-    GIT_TAG sigar-1.6.4
-    GIT_REPOSITORY https://github.com/hyperic/sigar.git)
-include_directories(${sigar_SOURCE_DIR}/include)
-
-
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/3rd_libs)
 
@@ -48,7 +39,7 @@ find_package(CURL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(indicators REQUIRED)
 
-set(LIBS m pthread gflags::gflags glog::glog SQLite::SQLite3 fmt::fmt Poco::Poco yaml-cpp mini::mini CURL::libcurl openssl::openssl indicators::indicators libsigar.a)
+set(LIBS m pthread gflags::gflags glog::glog SQLite::SQLite3 fmt::fmt Poco::Poco yaml-cpp mini::mini CURL::libcurl openssl::openssl indicators::indicators libstatgrab.a)
 
 
 ##源文件列表相关
