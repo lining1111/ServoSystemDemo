@@ -5,6 +5,9 @@
 #ifndef MYTCPHANDLER_H
 #define MYTCPHANDLER_H
 
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include "common/common.h"
 #include "common/CRC.h"
 #include "common/proc.h"

@@ -2,6 +2,10 @@
 // Created by lining on 2023/4/23.
 //
 
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #include "proc.h"
 #include "common.h"
 #include "config.h"

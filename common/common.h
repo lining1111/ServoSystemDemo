@@ -48,7 +48,7 @@ namespace common {
         string comVersion = ComVersion;
         string guid;
         uint64_t timestamp;
-        string code;//命令码
+        string code;
         int state = 0;
         string param;
     XPACK(O(comVersion, guid, timestamp, code, state, param));

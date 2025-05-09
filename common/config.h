@@ -16,7 +16,6 @@
 using namespace std;
 using namespace xpack;
 
-//配置类
 class LocalConfig {
 public:
     typedef struct Config {
@@ -40,7 +39,7 @@ extern LocalConfig localConfig;
 
 class Device {
 public:
-    string g_user;//需要回复的客户端地址
+    string g_user;//the user ip address need to reply
 public:
     Device();
 

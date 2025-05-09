@@ -4,7 +4,9 @@
 
 #ifndef MYWEBSOCKETCLIENT_H
 #define MYWEBSOCKETCLIENT_H
-
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#endif
 
 #include <glog/logging.h>
 #include <iostream>

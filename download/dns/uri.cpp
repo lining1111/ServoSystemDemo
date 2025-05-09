@@ -11,8 +11,9 @@ namespace uri {
             *dst++ = *src++;
             size--;
         }
-        if (__builtin_expect(!size, 0))
+        if (size!=0){
             dst--;
+        }
         *dst = '\0';
     }
 

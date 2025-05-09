@@ -7,18 +7,28 @@
 /*dns服务，ip池*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
+#include <map>
+#include "uri.h"
 #include <sys/types.h>          /* See NOTES */
+
+#if defined(__linux__)
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <string>
-#include <string.h>
-#include <map>
-#include "uri.h"
 #include <netdb.h>
+#elif defined(WIN32)
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+#endif
+
 #include <vector>
 #include <glog/logging.h>
+#include <mutex>
+#include <thread>
 
 using namespace std;
 using namespace uri;
@@ -218,9 +228,9 @@ C0  0C  域名 当报文中域名重复出现的时候，该字段使用2个字�
         }
         setsockopt(clifd, SOL_SOCKET, SO_RCVTIMEO, (char *) &tv, sizeof(timeval));
 
-        bzero(&servaddr, sizeof(servaddr));
+        memset(&servaddr, 0, sizeof(servaddr));
         servaddr.sin_family = AF_INET;
-        inet_aton(dnsip, &servaddr.sin_addr);
+        inet_pton(AF_INET, dnsip, &servaddr.sin_addr.s_addr);
         servaddr.sin_port = htons(SRV_PORT);
         memset(buf, 0, BUF_SIZE);
         dnshdr->id = (U16) 1;
@@ -250,7 +260,12 @@ C0  0C  域名 当报文中域名重复出现的时候，该字段使用2个字�
 
         i = sizeof(struct sockaddr_in);
         len = recvfrom(clifd, buf, BUF_SIZE, 0, (struct sockaddr *) &servaddr, (socklen_t *) &i);
+
+#if defined(__linux__)
         close(clifd);
+#elif defined(WIN32)
+        closesocket(clifd);
+#endif
         if (len < 0) {
             LOG(ERROR) << "dns_resolve_114 recv error";
             return -1;
@@ -304,9 +319,8 @@ ipaddr:ip地址;
 ret = 0 成功
 */
     int url_get(std::string hoststr, std::string &ipaddr) {
-        struct hostent hostinfo, *phost;
+        struct hostent *phost;
         char tmpipaddr[64];
-        char *buf;
         int ret;
         char dnsserver[8][32] = {
                 "119.29.29.29",        //public DNS+
@@ -318,18 +332,12 @@ ret = 0 成功
                 "8.8.8.8",                //google
                 "8.8.4.4"                //google
         };
-        buf = (char *) malloc(1024);
-        if (buf == NULL) {
-            LOG(ERROR) << "malloc 错误";
-            return -1;
-        }
-        memset(buf, 0x0, 1024);
+
         memset(tmpipaddr, 0x0, sizeof(tmpipaddr));
 
         /*取得主机IP地址*/
-        if (gethostbyname_r((char *) hoststr.c_str(), &hostinfo, buf,
-                            1024, &phost, &ret)) {
-            free(buf);
+        phost = gethostbyname(hoststr.c_str());
+        if (phost!= nullptr) {
             LOG(ERROR) << "gethostbyname_r " << hoststr << " ret:" << ret;
             int i;
             int size = sizeof(dnsserver) / 64;
@@ -347,18 +355,11 @@ ret = 0 成功
             LOG(ERROR) << "http  dns未查找到" << hoststr << "域名的ip";
             return -1;
         }
-        if (phost == NULL) {
+        if (phost == nullptr) {
             LOG(ERROR) << "dns_resolve_114 通过114.114.114.114获取ip地址失败";
-            free(buf);
             return -1;
         }
 
-        inet_ntop(AF_INET, (struct in_addr *) hostinfo.h_addr_list[0],
-                  tmpipaddr, sizeof(tmpipaddr));
-        ipaddr = tmpipaddr;
-        //DBG("gethostbyname_r获取host:%s,ip地址:%s",
-        //         (char *)hoststr.c_str(),tmpipaddr);
-        free(buf);
         return 0;
     }
 
@@ -369,7 +370,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
 */
     int searchDNS(std::string url, std::string &url_ip,
                   int force, std::string &host, std::string &port, std::string &ip_addr) {
-        static pthread_mutex_t dns_table_lock = PTHREAD_MUTEX_INITIALIZER; /*泊位临时数据库线程锁*/
+        static mutex mutex_dns;
 #define DNS_NUMBER   32
         static std::map<std::string, std::string> dns_table;
         std::string hoststr;
@@ -379,7 +380,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
 
         if (force == 2) {
             //DBG("更新dns");
-            pthread_mutex_lock(&dns_table_lock);
+            mutex_dns.lock();
             std::map<std::string, std::string>::iterator iter;//定义一个迭代指针iter
             for (iter = dns_table.begin(); iter != dns_table.end(); iter++) {
                 //DBG("更新dns[%s:%s]",iter->first,iter->second);
@@ -391,7 +392,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
                     iter->second = ipaddr;
                 }
             }
-            pthread_mutex_unlock(&dns_table_lock);
+            mutex_dns.unlock();
             return 0;
         }
 
@@ -420,7 +421,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
             LOG(ERROR) << "url:" << url << "的host地址是IP不进行解析";
             return -1;
         }
-        pthread_mutex_lock(&dns_table_lock);
+        mutex_dns.lock();
         std::map<std::string, std::string>::iterator tmpit;
         switch (force) {
             case 0:/*不强制获取*/
@@ -430,7 +431,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
                     ret = url_get(hoststr, ipaddr);
                     if (ret < 0) {
                         LOG(ERROR) << "获取ip地址失败";
-                        pthread_mutex_unlock(&dns_table_lock);
+                        mutex_dns.unlock();
                         return -1;
                     }
                     if (strlen(ipaddr.c_str()) > 0) {
@@ -445,7 +446,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
                 ret = url_get(hoststr, ipaddr);
                 if (ret < 0) {
                     LOG(ERROR) << "获取ip地址失败";
-                    pthread_mutex_unlock(&dns_table_lock);
+                    mutex_dns.unlock();
                     return -1;
                 }
                 if (strlen(ipaddr.c_str()) > 0) {
@@ -458,7 +459,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
                     ret = url_get(hoststr, ipaddr);
                     if (ret < 0) {
                         LOG(ERROR) << "获取ip地址失败";
-                        pthread_mutex_unlock(&dns_table_lock);
+                        mutex_dns.unlock();
                         return -1;
                     }
                     if (strlen(ipaddr.c_str()) > 0) {
@@ -469,7 +470,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
                 }
                 break;
         }
-        pthread_mutex_unlock(&dns_table_lock);
+        mutex_dns.unlock();
         url_ip = url_ip.replace(url_ip.find(hoststr), hoststr.length(), ipaddr);
         if (url_ip.find("http://") != std::string::npos) {
             url_ip = url_ip.replace(url_ip.find("http://"), strlen("http://"), "");
@@ -483,23 +484,17 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
         while (1) {
             std::string tmpurl, tmpip, tmphost, tmpport, tmp_ipaddr;
             searchDNS(tmpurl, tmpip, 2, tmphost, tmpport, tmp_ipaddr);
-            sleep(60 * 30);/*30分钟进行一次dns的更新*/
+            std::this_thread::sleep_for(std::chrono::seconds(60 * 30));
         }
         return NULL;
     }
 
 /*dns服务*/
     int DNSServerStart() {
-        pthread_t tid;
-        int ret;
+        auto t = thread(&dns_server_task, nullptr);
+        t.detach();
 
-        ret = pthread_create(&tid, NULL, dns_server_task, NULL);
-        if (ret != 0) {
-            LOG(ERROR) << "Can't create dns_server_start()";
-            return -1;
-        } else {
-            LOG(INFO) << "Create dns_server_start() succeed";
-            return 0;
-        }
+        LOG(INFO) << "Create dns_server_start() succeed";
+        return 0;
     }
 }

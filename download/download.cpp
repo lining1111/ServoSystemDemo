@@ -2,6 +2,10 @@
 // Created by lining on 2/14/25.
 //
 
+#ifdef WIN32
+#include <io.h>
+#endif
+
 #include "download.h"
 
 std::string getFileMD5(std::string file) {
@@ -35,9 +39,9 @@ std::string getFileMD5(std::string file) {
     }
 }
 
-static ssize_t writen(int fd, const void *vptr, size_t n) {
+static size_t writen(int fd, const void *vptr, size_t n) {
     size_t nleft;
-    ssize_t nwritten;
+    size_t nwritten;
     const char *ptr;
     ptr = (const char *) vptr;
     nleft = n;

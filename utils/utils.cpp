@@ -38,7 +38,7 @@ int runCmd(const std::string &command, std::string *output, bool redirect_stderr
     const auto &cmd = redirect_stderr ? command + " 2>&1" : command;
 #if defined(__linux__)
     auto pipe = popen(cmd.c_str(), "r");
-#elif defined(_WIN32)
+#elif defined(WIN32)
     auto pipe = _popen(cmd.c_str(), "r");
 #endif
     if (!pipe) {
@@ -333,7 +333,7 @@ string getIpStr(unsigned int ip) {
 
     x.addr = ip;
     char buffer[64];
-    bzero(buffer, 64);
+    memset(buffer, 0,64);
     sprintf(buffer, "%d.%d.%d.%d", x.s1, x.s2, x.s3, x.s4);
 
     return string(buffer);
@@ -341,19 +341,19 @@ string getIpStr(unsigned int ip) {
 
 bool isIPv4(string IP) {
     int dotcnt = 0;
-    //数一共有几个.
+    //How many '.' are there in total
     for (int i = 0; i < IP.length(); i++) {
         if (IP[i] == '.')
             dotcnt++;
     }
-    //ipv4地址一定有3个点
+    //ipv4 address must have 3 '.'
     if (dotcnt != 3)
         return false;
     string temp = "";
     for (int i = 0; i < IP.length(); i++) {
         if (IP[i] != '.')
             temp += IP[i];
-        //被.分割的每部分一定是数字0-255的数字
+        //each segment must be 1-3 digits 0-255
         if (IP[i] == '.' || i == IP.length() - 1) {
             if (temp.length() == 0 || temp.length() > 3)
                 return false;

@@ -78,9 +78,7 @@ int MyWebsocketClient::Run() {
 
 int MyWebsocketClient::SendBase(string pkg) {
     int ret = 0;
-    //阻塞调用，加锁
     std::unique_lock<std::mutex> lock(*mtx);
-    //如果添加了分割则不添加分割了
     if (pkg.back() != '*') {
         pkg.push_back('*');
     }
@@ -104,7 +102,6 @@ int MyWebsocketClient::SendBase(string pkg) {
             ret = -3;
         }
     }
-    //记录发送时间
     if (this->timeSend == 0) {
         this->timeRecv = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
@@ -118,7 +115,6 @@ int MyWebsocketClient::SendBase(string pkg) {
 
 int MyWebsocketClient::Send(char *buf_send, int len_send) {
     int ret = 0;
-    //阻塞调用，加锁
     std::unique_lock<std::mutex> lock(*mtx);
     LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << string(buf_send);
     try {
@@ -141,7 +137,6 @@ int MyWebsocketClient::Send(char *buf_send, int len_send) {
         }
     }
 
-    //记录发送时间
     if (this->timeSend == 0) {
         this->timeRecv = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
@@ -211,6 +206,7 @@ int MyWebsocketClient::ThreadRecv(MyWebsocketClient *local) {
     }
 
     LOG(WARNING) << local->_peerAddress << " ThreadRecv start";
+    return 0;
 }
 
 int MyWebsocketClient::ThreadStateMachine(MyWebsocketClient *local) {
@@ -237,7 +233,6 @@ int MyWebsocketClient::ThreadProcessPkg(MyWebsocketClient *local) {
             if (pkg.empty()) {
                 continue;
             }
-            //按照cmd分别处理
             auto guid = common::parseGUID(pkg);
             if (guid.empty()) {
                 guid = getGuid();

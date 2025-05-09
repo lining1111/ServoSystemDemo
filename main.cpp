@@ -1,3 +1,7 @@
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #include <iostream>
 #include <csignal>
 #include <gflags/gflags.h>
@@ -9,15 +13,10 @@
 #include "common/config.h"
 #include "localBusiness/localBusiness.h"
 
-
 bool isExit = false;
 void handleSignal(int sig) {
-    if (sig == SIGPIPE) {
-        cout << "sig pipe" << endl;
-    } else {
         cout << "exit" << endl;
         isExit = true;
-    }
 }
 
 DEFINE_int32(port, 10001, "本地服务端端口号，默认10001");
@@ -31,7 +30,7 @@ int main(int argc, char **argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     std::string proFul = std::string(argv[0]);
     std::string pro = getFileName(proFul);
-    //日志系统类
+
     GlogHelper glogHelper(pro, FLAGS_keep, FLAGS_logDir, FLAGS_isSendSTDOUT);
 
     LOG(WARNING) << "程序工作目录:" << Poco::Path::current() << ",版本号:" << VERSION_BUILD_TIME;
@@ -42,10 +41,11 @@ int main(int argc, char **argv) {
     }
 
     device.Init();
-
+#if defined(__linux__)
     signal(SIGPIPE, SIG_IGN);
+#endif
     signal(SIGINT, handleSignal);//Ctrl+C
-    signal(SIGTERM, handleSignal);//kill命令
+    signal(SIGTERM, handleSignal);//kill
 
     LOG(WARNING) << "开启本地tcp通信";
     auto localBusiness = LocalBusiness::instance();
@@ -57,22 +57,20 @@ int main(int argc, char **argv) {
             break;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * 1000));
-        //获取现在的毫秒
+
         auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
 
         if (localConfig._config.isCheckClient) {
-            //轮询接入的客户端接收时间，如果超过10秒没有新信息，则踢掉
             localBusiness->kickoff(30 * 1000, now_ms);
         }
-        //往fpm写入一些数据
+
 //        uint8_t mesg[12] = {0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x07, 0x00, 0x03, 0x00, 0x00, 0x0A};
 //        ((FPM*) device.g_fpm)->TriggerAction((char *)mesg, 12);
         device.Keep();
 
     }
 
-    //释放
     localBusiness->Stop();
     localBusiness->stopAllConns();
     delete localBusiness;
