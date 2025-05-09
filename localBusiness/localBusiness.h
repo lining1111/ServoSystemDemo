@@ -78,10 +78,10 @@ public:
 
     /*
      * clientType
-     * 0 本地tcp客户端
-     * 1 远端tcp客户端
-     * 2 本地ws客户端
-     * 3 远端ws客户端
+     * 0 local tcp client
+     * 1 remote tcp client
+     * 2 local ws client
+     * 3 remote ws client
      */
 
     enum CLIType {
@@ -105,10 +105,6 @@ public:
     utils::Timer timerKeep;
 
 private:
-    /**
-    * 查看服务端和客户端状态，并执行断线重连
-    * @param p
-    */
     static void Task_Keep(void *p);
 };
 

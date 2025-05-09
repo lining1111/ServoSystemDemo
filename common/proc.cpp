@@ -17,44 +17,42 @@ using namespace common;
 
 void CacheTimestamp::update(int index, uint64_t timestamp, int caches) {
     std::unique_lock<std::mutex> lock(mtx);
-    //如果已经更新了就不再进行下面的操作
+    //If it has already been updated, do not proceed with the following operations.
     if (!isSetInterval) {
-        //判断是否设置了index，index默认为-1
+        //Check if index is set; if not, the default value is -1.
         if (dataIndex == -1) {
             dataIndex = index;
             dataTimestamps.clear();
             dataTimestamps.push_back(timestamp);
         } else {
-            //判断是否是对应的index
+            //Check if it is the corresponding index.
             if (dataIndex == index) {
-                //判断时间戳是否是递增的，如果不是的话，清除之前的内容，重新开始
+                //Check if the timestamp is increasing; if not, clear the previous content and start over.
                 if (dataTimestamps.empty()) {
-                    //是对应的index的话，将时间戳存进队列
+                    //if queue is empty push it
                     dataTimestamps.push_back(timestamp);
                 } else {
                     if (timestamp <= dataTimestamps.back()) {
-                        //恢复到最初状态
                         LOG(ERROR) << "当前插入时间戳 " << timestamp << " 小于已插入的最新时间戳 "
                                    << dataTimestamps.back() << "，将恢复到最初状态";
                         dataTimestamps.clear();
                         dataIndex = -1;
                     } else {
-                        //是对应的index的话，将时间戳存进队列，正常插入
+                        //If it is the corresponding index, store the timestamp in the queue.
                         dataTimestamps.push_back(timestamp);
                     }
                 }
             }
         }
-        //如果存满缓存帧后，计算帧率，并设置标志位
+        //After the cache frame is full, calculate the frame rate and set the flag.
         if (dataTimestamps.size() == caches) {
-            //打印下原始时间戳队列
             LOG(WARNING) << "动态帧率原始时间戳队列:" << fmt::format("{}", dataTimestamps);
             std::vector<uint64_t> intervals;
             for (int i = 1; i < dataTimestamps.size(); i++) {
                 auto cha = dataTimestamps.at(i) - dataTimestamps.at(i - 1);
                 intervals.push_back(cha);
             }
-            //计算差值的平均数
+            //calculate the average frame rate
             uint64_t sum = 0;
             for (auto iter: intervals) {
                 sum += iter;
@@ -69,7 +67,7 @@ void CacheTimestamp::update(int index, uint64_t timestamp, int caches) {
 
 
 /*
- * 业务处理的接口基类
+ * Base class for business processing interfaces
  */
 template<class Req, class Rsp>
 class Handler {
@@ -94,7 +92,7 @@ public:
         rsp = new Rsp();
     }
 
-    //前处理，解析请求
+    //pre-processing, parse request
     int dec() {
         int ret = 0;
         try {
@@ -107,20 +105,20 @@ public:
         return ret;
     }
 
-    //前处理失败后
+    //pre-processing fail, actual business
     void decErr() {
         rsp->state = State_UnmarshalFail;
         rsp->param = "json decode err:" + err;
     }
 
-    //前处理成功后，实际业务
+    //pre-processing success, actual business
     virtual void proc() = 0;
 
-    //后处理，返回结果
+    //post-processing, return result
     void enc() {
         if (rsp != nullptr && rsp->state != State_CmdExeNoRsp) {
             rsp->guid = req->guid;
-            //code 以Req开头的，Req为Rsp
+            //Code starting with Req, Req start with Rsp
             if (req->code.find("Req") == 0) {
                 rsp->code = "Rsp" + req->code.substr(3);
             } else {
@@ -152,9 +150,6 @@ public:
 
     }
 };
-/**
- * 业务处理的具体类
- */
 
 #define Handle(xxx) \
 int Handle##xxx(const string &h, const string &content) { \

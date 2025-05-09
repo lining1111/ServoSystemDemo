@@ -23,7 +23,6 @@
 using namespace std;
 using namespace uri;
 namespace myDNS {
-/*判断字符串是不是一个有效ip地址,0非ip，1，ip地址*/
     int isIP(char *str) {
         char temp[32];
         int a, b, c, d;

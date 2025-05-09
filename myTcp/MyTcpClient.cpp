@@ -93,7 +93,7 @@ int MyTcpClient::Reconnect() {
 
 int MyTcpClient::Run() {
     _t.start(_reactor);
-    _tHeartbeat = std::thread(ThreadHearbeat, this);
+    _tHeartbeat = std::thread(ThreadHeartbeat, this);
     _tHeartbeat.detach();
 
     return 0;
@@ -132,7 +132,7 @@ void MyTcpClient::onReadable(ReadableNotification *pNf) {
 }
 
 
-void MyTcpClient::ThreadHearbeat(MyTcpClient *local) {
+void MyTcpClient::ThreadHeartbeat(MyTcpClient *local) {
     LOG(WARNING) << local->_peerAddress << " heartbeat thread start";
     while (local->_isRun) {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * 1000));

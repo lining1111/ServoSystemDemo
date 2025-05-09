@@ -77,16 +77,16 @@ static size_t download_file_callback(void *buffer, size_t size, size_t nmemb, vo
 
 
 /**
- * 下载并保存到本地（程序运行当前路径下
+ * Download and save to local, in the current path of the program
  * @param url
  * @param timeout
  * @param fileName
  * @param fileSize
  * @param fileMD5
- * @return 0：成功
- * -1：下载文件不存在
- * -2：下载超时
- * -3：本地剩余空间不足
+ * @return 0：success
+ * -1：file not found
+ * -2：download timeout
+ * -3：local disk space not enough
  */
 int downloadFile(std::string url, int timeout, std::string fileName, int fileSize, std::string fileMD5) {
     LOG(INFO) << "downloadFile," << "url:" << url << ",timeout:" << timeout
@@ -118,20 +118,20 @@ int downloadFile(std::string url, int timeout, std::string fileName, int fileSiz
     curl = curl_easy_init();
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, timeout);            //接收数据时超时设置，如果10秒内数据未接收完，直接退出
-        //curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);                       //查找次数，防止查找太深
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, timeout);      //连接超时，这个数值如果设置太短可能导致数据请求不到就断开了
-        curl_easy_setopt(curl, CURLOPT_URL, (char *) ipurl.c_str());//请求的URL
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, timeout);
+        //curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, timeout);
+        curl_easy_setopt(curl, CURLOPT_URL, (char *) ipurl.c_str());
         downloadTotal = fileSize;
         downloaded = 0;
         countDownloadPrint = 0;
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, download_file_callback);     //数据回来后的回调函数
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &fd);              //回调函数里面用到的参数
-        //Todo:302重定向问题
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, download_file_callback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &fd);
+        //302 redirection issue
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
-        curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 5);    // 设置重定向的最大次数
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);    // 设置301、302跳转跟随location
-//      curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);                         //可视化调试
+        curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 5);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+//      curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 
         res = curl_easy_perform(curl);
         long http_response_code = 0;

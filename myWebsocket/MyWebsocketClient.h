@@ -79,7 +79,7 @@ private:
 
     static int ThreadProcessPkg(MyWebsocketClient *local);
 
-    static void ThreadHearbeat(MyWebsocketClient *local);
+    static void ThreadHeartbeat(MyWebsocketClient *local);
 
 };
 

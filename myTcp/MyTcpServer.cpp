@@ -88,8 +88,8 @@ int MyTcpServer::Open() {
         return -1;
     }
     _s.setReusePort(true);
-    _s.setReuseAddress(true);
     _s.setLinger(true, 0);
+    _s.setKeepAlive(true);
     _acceptor = new Poco::Net::SocketAcceptor<MyTcpServerHandler>(_s, _reactor);
     isListen = true;
     return 0;
@@ -109,8 +109,8 @@ int MyTcpServer::ReOpen() {
         delete _acceptor;
     }
     _s.setReusePort(true);
-    _s.setReuseAddress(true);
     _s.setLinger(true, 0);
+    _s.setKeepAlive(true);
     _acceptor = new Poco::Net::SocketAcceptor<MyTcpServerHandler>(_s, _reactor);
     isListen = true;
     return 0;

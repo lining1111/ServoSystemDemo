@@ -17,7 +17,6 @@ public:
                     const std::map<std::string, std::string> &header,
                     int &state);
 
-    // 在Query中添加表单数据
     std::string Post(const std::string &path,
                      const std::map<std::string, std::string> &header,
                      int &state);

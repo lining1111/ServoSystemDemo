@@ -23,7 +23,6 @@ private:
 
 class FSM {
 private:
-    //环形buffer相关
     mutex *mtx = nullptr;
     uint8_t *buff = nullptr;
 
@@ -34,10 +33,9 @@ private:
     int _available_for_write;
     //int available_for_write = rb_capacity - available_for_read;
 
-    //状态机相关
     Poco::NotificationQueue _recv;
 public:
-    uint64_t _needLen = 1;//缓存需要有的数据长度
+    uint64_t _needLen = 1;//Cache required data length
 public:
     FSM(size_t capacity);
 

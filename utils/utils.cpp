@@ -7,17 +7,19 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
-#include <dirent.h>
-#include <sys/stat.h>
 #include <cerrno>
 #include <iostream>
+#if defined(__linux__)
+#include <unistd.h>
+#include <sys/stat.h>
 #include <sys/statfs.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <ifaddrs.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <unistd.h>
+#include <dirent.h>
+#endif
 #include <chrono>
 #include "Poco/UUID.h"
 #include "Poco/UUIDGenerator.h"
@@ -31,35 +33,14 @@ uint32_t swap_uint32(uint32_t val) {
            ((val & 0x000000ff) << 24);
 }
 
-vector<string> getDevList() {
-    vector<string> list;
-    // 打开 /dev 目录
-    DIR *dir = opendir("/dev");
-    if (dir == nullptr) {
-        perror("opendir");
-        return list;
-    }
-
-    // 读取目录项
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != nullptr) {
-        // 过滤掉当前目录('.')和上级目录('..')
-        if (entry->d_name[0] != '.') {
-//            printf("%s\n", entry->d_name);
-            list.emplace_back(entry->d_name);
-        }
-    }
-
-    // 关闭目录
-    closedir(dir);
-
-    return list;
-}
-
 
 int runCmd(const std::string &command, std::string *output, bool redirect_stderr) {
     const auto &cmd = redirect_stderr ? command + " 2>&1" : command;
+#if defined(__linux__)
     auto pipe = popen(cmd.c_str(), "r");
+#elif defined(_WIN32)
+    auto pipe = _popen(cmd.c_str(), "r");
+#endif
     if (!pipe) {
         //记录日志
         return errno == 0 ? -1 : errno;
@@ -73,7 +54,11 @@ int runCmd(const std::string &command, std::string *output, bool redirect_stderr
 //            printf("%s",buffer);
         }
     }
+#if defined(__linux__)
     return pclose(pipe);
+#elif defined(_WIN32)
+    return _pclose(pipe);
+#endif
 }
 
 uint64_t getTimestampMs() {
@@ -428,6 +413,8 @@ string validIPAddress(string IP) {
     return "Neither";
 }
 
+#if defined(__linux__)
+
 void GetDirFiles(const string &path, vector<string> &array) {
     DIR *dir;
     struct dirent *ptr;
@@ -445,6 +432,31 @@ void GetDirFiles(const string &path, vector<string> &array) {
         }
         closedir(dir);
     }
+}
+
+vector<string> getDevList() {
+    vector<string> list;
+    // 打开 /dev 目录
+    DIR *dir = opendir("/dev");
+    if (dir == nullptr) {
+        perror("opendir");
+        return list;
+    }
+
+    // 读取目录项
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        // 过滤掉当前目录('.')和上级目录('..')
+        if (entry->d_name[0] != '.') {
+//            printf("%s\n", entry->d_name);
+            list.emplace_back(entry->d_name);
+        }
+    }
+
+    // 关闭目录
+    closedir(dir);
+
+    return list;
 }
 
 void CreatePath(const std::string &path) {
@@ -651,6 +663,8 @@ bool isProcessRun(string proc) {
 
     return ret;
 }
+
+#endif
 
 template<typename Func, typename... Args>
 auto measureExecutionTime(Func &&func, Args &&... args, double &elapsedTime) -> decltype(auto) {

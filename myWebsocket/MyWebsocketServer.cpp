@@ -31,7 +31,6 @@ MyWebSocketRequestHandler::~MyWebSocketRequestHandler() {
 void MyWebSocketRequestHandler::handleRequest(HTTPServerRequest &request, HTTPServerResponse &response) {
     try {
         _ws = new WebSocket(request, response);
-        // 将ws添加到全局数组内
         LOG(WARNING) << "websocket client connect:" << _ws->peerAddress().toString();
         _peerAddress = _ws->peerAddress().toString();
         auto localBusiness = LocalBusiness::instance();
@@ -49,10 +48,10 @@ void MyWebSocketRequestHandler::handleRequest(HTTPServerRequest &request, HTTPSe
                 _fsm->TriggerAction(recvBuf, len);
             }
         } while (n > 0 || (flags & WebSocket::FRAME_OP_BITMASK) != WebSocket::FRAME_OP_CLOSE);
-        //将ws从客户端数组删除
+        //Remove ws from the client array.
         LOG(WARNING) << "websocket client disconnect:" << _ws->peerAddress().toString();
         localBusiness->delConn_ws(_ws->peerAddress().toString());
-        //!!!这里不要delete this 因为Poco会进入析构
+        //!!!Here, do not delete this because Poco will enter the destructor.
     }
     catch (WebSocketException &exc) {
         switch (exc.code()) {
@@ -72,9 +71,7 @@ void MyWebSocketRequestHandler::handleRequest(HTTPServerRequest &request, HTTPSe
 
 int MyWebSocketRequestHandler::SendBase(string pkg) {
     int ret = 0;
-    //阻塞调用，加锁
     std::unique_lock<std::mutex> lock(*mtx);
-    //如果添加了分割则不添加分割了
     if (pkg.back() != '*') {
         pkg.push_back('*');
     }
@@ -98,7 +95,6 @@ int MyWebSocketRequestHandler::SendBase(string pkg) {
             ret = -3;
         }
     }
-    //记录发送时间
     if (this->timeSend == 0) {
         this->timeRecv = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
@@ -112,7 +108,6 @@ int MyWebSocketRequestHandler::SendBase(string pkg) {
 
 int MyWebSocketRequestHandler::Send(char *buf_send, int len_send) {
     int ret = 0;
-    //阻塞调用，加锁
     std::unique_lock<std::mutex> lock(*mtx);
     LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << string(buf_send);
     try {
@@ -135,7 +130,6 @@ int MyWebSocketRequestHandler::Send(char *buf_send, int len_send) {
         }
     }
 
-    //记录发送时间
     if (this->timeSend == 0) {
         this->timeRecv = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
@@ -179,7 +173,7 @@ void MyWebSocketRequestHandler::Action() {
     char value = 0x00;
     if (_fsm->Read(&value, 1) == 1) {
         if (value == '*') {
-            //得到分包尾部
+            //get tail tag '*'
             _pkgs.enqueueNotification(Poco::AutoPtr<MsgNotification>(new MsgNotification(_pkgCache)));
             _pkgCache.clear();
         } else {

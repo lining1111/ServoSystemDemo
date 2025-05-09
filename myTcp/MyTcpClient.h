@@ -60,7 +60,7 @@ public:
 private:
     void onReadable(ReadableNotification *pNf);
 
-    static void ThreadHearbeat(MyTcpClient *local);
+    static void ThreadHeartbeat(MyTcpClient *local);
 };
 
 #endif //MYTCPCLIENT_H

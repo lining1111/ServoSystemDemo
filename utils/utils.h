@@ -10,7 +10,6 @@
 #include <vector>
 #include <codecvt>
 #include <locale>
-#include "iconv.h"
 
 using namespace std;
 
@@ -19,8 +18,7 @@ uint16_t swap_uint16(uint16_t val);
 
 uint32_t swap_uint32(uint32_t val);
 
-//获取/dev目录下的文件集合
-vector<string> getDevList();
+
 
 int runCmd(const std::string &command, std::string *output = nullptr,
            bool redirect_stderr = false);
@@ -97,8 +95,11 @@ bool isIPv6(string IP);
 
 string validIPAddress(string IP);
 
+#if defined(__linux__)
 void GetDirFiles(const string &path, vector<string> &array);
 
+//获取/dev目录下的文件集合
+vector<string> getDevList();
 //创建路径文件夹
 void CreatePath(const std::string &path);
 
@@ -115,7 +116,7 @@ int getMAC(string &mac);
 int getIpaddr(string &ethIp, string &n2nIp);
 
 bool isProcessRun(string proc);
-
+#endif
 //计算函数执行耗时
 template<typename Func, typename... Args>
 auto measureExecutionTime(Func &&func, Args &&... args, double &elapsedTime) -> decltype(auto);

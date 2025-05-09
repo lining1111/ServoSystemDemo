@@ -11,7 +11,6 @@
 
 
 bool isExit = false;
-
 void handleSignal(int sig) {
     if (sig == SIGPIPE) {
         cout << "sig pipe" << endl;
@@ -19,25 +18,6 @@ void handleSignal(int sig) {
         cout << "exit" << endl;
         isExit = true;
     }
-}
-
-
-int signalIgnPipe() {
-    struct sigaction act;
-
-    memset(&act, 0, sizeof(act));
-    act.sa_handler = handleSignal;
-    sigemptyset(&act.sa_mask);
-    act.sa_flags = 0;
-    sigaction(SIGTERM, &act, nullptr);
-    sigaction(SIGINT, &act, nullptr);
-    sigaction(SIGSTOP, &act, nullptr);
-    if (sigaction(SIGPIPE, &act, nullptr) < 0) {
-        printf("call sigaction fail, %s\n", strerror(errno));
-        return errno;
-    }
-
-    return 0;
 }
 
 DEFINE_int32(port, 10001, "本地服务端端口号，默认10001");
@@ -63,7 +43,10 @@ int main(int argc, char **argv) {
 
     device.Init();
 
-    signalIgnPipe();
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGINT, handleSignal);//Ctrl+C
+    signal(SIGTERM, handleSignal);//kill命令
+
     LOG(WARNING) << "开启本地tcp通信";
     auto localBusiness = LocalBusiness::instance();
     localBusiness->AddServer("server1", FLAGS_port);

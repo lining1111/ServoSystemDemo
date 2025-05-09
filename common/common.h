@@ -65,22 +65,22 @@ namespace common {
     string parseGUID(const string &pkg);
 
     /*
-     * 回复data中state枚举
-     * 0：成功 其他，失败，具体情况按指来定，
-     * 每次的通信都是以Req开始，Rsp结束，涉及注册、验证需要在交互期间发送提示信息的，提示信息类型以Note表示
-     *
+     * Reply frame data state enumeration
+     * 0：success，other:fail
+     * Each communication starts with “Req” and ends with “Rsp”.
+     * Note types are used to send prompt information during interactions involving registration and verification.
      */
     enum State {
-        State_NoClient = -1000,//未有客户端连接
-        State_ParamErr = -102,//获取参数失败
-        State_NotFindCmd = -101,//未找到cmd
-        State_UnmarshalFail = -100,//协议反序列化失败
-        State_CmdExeNoRsp = 100,//此状态下，执行完不用回复客户端
-        State_Success = 0,//成功
-        State_Null = -1,//模块为null,未初始化
-        State_Unconnect = -2,//未连接
-        State_SendErr = -3,//发送失败
-        State_LongTimeNoRecv = -4,//长时间未收到模块信息
+        State_NoClient = -1000,//no client connected
+        State_ParamErr = -102,//get param error
+        State_NotFindCmd = -101,//not find cmd
+        State_UnmarshalFail = -100,//unmarshal fail
+        State_CmdExeNoRsp = 100,//in this case, the command is executed successfully, but the reply frame is not returned
+        State_Success = 0,//success
+        State_Null = -1,//module info is null,not init
+        State_Unconnect = -2,//unconnect
+        State_SendErr = -3,//send error
+        State_LongTimeNoRecv = -4,//long time no recv
 
     };
 

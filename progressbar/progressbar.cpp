@@ -22,12 +22,12 @@ void test_progressbar() {
 }
 
 void printProgressBar(int completed, int total, char fillChar, int width) {
-    // 计算进度条的完成部分和剩余部分
+    // Calculate the completed and remaining parts of the progress bar.
     double progress = static_cast<double>(completed) / total;
     int filledWidth = static_cast<int>(width * progress);
     int emptyWidth = width - filledWidth;
 
-    // 打印进度条
+    // print the progress bar.
     std::cout << "[";
     for (int i = 0; i < filledWidth; ++i) {
         std::cout << fillChar;

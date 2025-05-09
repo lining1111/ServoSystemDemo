@@ -25,7 +25,7 @@ using Poco::Net::HTTPRequestHandlerFactory;
 using namespace Poco::Net;
 using namespace std;
 
-//websocket请求的处理
+//websocket request handler
 class MyWebSocketRequestHandler : public HTTPRequestHandler {
 private:
     size_t _bufSize;

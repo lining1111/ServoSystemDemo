@@ -70,7 +70,7 @@ int MyWebsocketClient::Run() {
     _tRecv = std::thread(ThreadRecv, this);
     _tRecv.detach();
 
-    _tHeartbeat = std::thread(ThreadHearbeat, this);
+    _tHeartbeat = std::thread(ThreadHeartbeat, this);
     _tHeartbeat.detach();
 
     return 0;
@@ -275,7 +275,7 @@ int MyWebsocketClient::ThreadProcessPkg(MyWebsocketClient *local) {
     return 0;
 }
 
-void MyWebsocketClient::ThreadHearbeat(MyWebsocketClient *local) {
+void MyWebsocketClient::ThreadHeartbeat(MyWebsocketClient *local) {
     LOG(WARNING) << local->_peerAddress << " heartbeat thread start";
     while (local->_isRun) {
         std::this_thread::sleep_for(std::chrono::milliseconds(5 * 1000));
