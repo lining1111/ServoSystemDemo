@@ -11,14 +11,22 @@
 #include <iostream>
 #if defined(__linux__)
 #include <unistd.h>
+#include <sys/resource.h>
+#include <sys/times.h>
+#include <sys/sysinfo.h>
 #include <sys/stat.h>
-#include <sys/statfs.h>
+#include <sys/statvfs.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <ifaddrs.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <dirent.h>
+#elif defined(WIN32)
+#include <windows.h>
+#include <pdh.h>
+#include <pdhmsg.h>
+#pragma comment(lib, "pdh.lib")
 #endif
 #include <chrono>
 #include "Poco/UUID.h"
@@ -413,7 +421,6 @@ string validIPAddress(string IP) {
     return "Neither";
 }
 
-#if defined(__linux__)
 
 void GetDirFiles(const string &path, vector<string> &array) {
     DIR *dir;
@@ -485,81 +492,147 @@ void CreatePath(const std::string &path) {
 }
 
 double cpuUtilizationRatio() {
-    string cmd = R"(top -bn1 |sed -n '3p' | awk -F 'ni,' '{print $2}' |cut -d. -f1 | sed 's/ //g')";
-    std::string strRes;
-    runCmd(cmd, &strRes);
+#ifdef _WIN32
+    // Windows实现
+    FILETIME idleTime, kernelTime, userTime;
 
-    Trim(strRes, ' ');
-    return 100.0 - atof(strRes.c_str());
+    if (GetSystemTimes(&idleTime, &kernelTime, &userTime)) {
+        static uint64_t previousIdleTime = 0;
+        static uint64_t previousKernelTime = 0;
+        static uint64_t previousUserTime = 0;
+
+        uint64_t idle = (uint64_t(idleTime.dwHighDateTime) << 32) | idleTime.dwLowDateTime;
+        uint64_t kernel = (uint64_t(kernelTime.dwHighDateTime) << 32) | kernelTime.dwLowDateTime;
+        uint64_t user = (uint64_t(userTime.dwHighDateTime) << 32) | userTime.dwLowDateTime;
+
+        uint64_t system = kernel + user;
+        uint64_t idleDelta = idle - previousIdleTime;
+        uint64_t systemDelta = system - previousSystemTime;
+
+        previousIdleTime = idle;
+        previousSystemTime = system;
+
+        if (systemDelta != 0 && idleDelta <= systemDelta) {
+            return (systemDelta - idleDelta) * 100.0 / systemDelta;
+        }
+    }
+#else
+    // Linux/macOS实现
+    static double previousTotalTime = 0;
+    static double previousIdleTime = 0;
+
+    FILE* file = fopen("/proc/stat", "r");
+    if (file) {
+        char line[256];
+        if (fgets(line, sizeof(line), file)) {
+            if (strncmp(line, "cpu ", 4) == 0) {
+                double user, nice, system, idle, iowait, irq, softirq;
+
+                sscanf(line + 5, "%lf %lf %lf %lf %lf %lf %lf",
+                       &user, &nice, &system, &idle, &iowait, &irq, &softirq);
+
+                double totalTime = user + nice + system + idle + iowait + irq + softirq;
+                double idleTime = idle;
+
+                double totalDelta = totalTime - previousTotalTime;
+                double idleDelta = idleTime - previousIdleTime;
+
+                previousTotalTime = totalTime;
+                previousIdleTime = idleTime;
+
+                if (totalDelta != 0 && idleDelta <= totalDelta) {
+                    fclose(file);
+                    return (totalDelta - idleDelta) * 100.0 / totalDelta;
+                }
+            }
+        }
+        fclose(file);
+    }
+#endif
+
+    return -1.0; // 获取失败
 
 }
 
-double cpuTemperature() {
-    FILE *fp = nullptr;
-    int temp = 0;
-    fp = fopen("/sys/devices/virtual/thermal/thermal_zone0/temp", "r");
-    if (fp == nullptr) {
-        std::cerr << "CpuTemperature fail" << std::endl;
-        return 0;
+
+bool GetMemoryInfo(MemoryInfo& info) {
+#if defined(_WIN32)
+    // Windows实现
+    MEMORYSTATUSEX memStatus;
+    memStatus.dwLength = sizeof(memStatus);
+    if (!GlobalMemoryStatusEx(&memStatus)) {
+        return false;
     }
 
-    fscanf(fp, "%d", &temp);
-    fclose(fp);
-    return (double) temp / 1000;
+    info.total = memStatus.ullTotalPhys;
+    info.available = memStatus.ullAvailPhys;
+    info.used = info.total - info.available;
+    info.usage = static_cast<double>(info.used) / info.total;
+
+#elif defined(__linux__)
+    // Linux实现
+    struct sysinfo sysInfo;
+    if (sysinfo(&sysInfo) != 0) {
+        return false;
+    }
+
+    info.total = sysInfo.totalram * sysInfo.mem_unit;
+    info.available = sysInfo.freeram * sysInfo.mem_unit;
+    info.used = info.total - info.available;
+    info.usage = static_cast<double>(info.used) / info.total;
+#else
+    // 不支持的操作系统
+    return false;
+#endif
+
+    return true;
 }
 
-int memoryInfo(int &total, int &free) {
-    int mem_free = -1;//空闲的内存，=总内存-使用了的内存
-    int mem_total = -1; //当前系统可用总内存
-    int mem_buffers = -1;//缓存区的内存大小
-    int mem_cached = -1;//缓存区的内存大小
-    char name[20];
+bool GetCurrentDirectorySpace(DiskSpaceInfo& info) {
+#if defined(_WIN32) || defined(_WIN64)
+    // Windows实现
+    ULARGE_INTEGER totalBytes, freeBytes, availableBytes;
 
-    FILE *fp;
-    char buf1[128], buf2[128], buf3[128], buf4[128], buf5[128];
-    int buff_len = 128;
-    fp = fopen("/proc/meminfo", "r");
-    if (fp == nullptr) {
-        std::cerr << "GetSysMemInfo() error! file not exist" << std::endl;
-        return -1;
+    // 获取当前工作目录所在的驱动器
+    char currentDir[MAX_PATH];
+    if (!GetCurrentDirectoryA(MAX_PATH, currentDir)) {
+        return false;
     }
-    if (nullptr == fgets(buf1, buff_len, fp) ||
-        nullptr == fgets(buf2, buff_len, fp) ||
-        nullptr == fgets(buf3, buff_len, fp) ||
-        nullptr == fgets(buf4, buff_len, fp) ||
-        nullptr == fgets(buf5, buff_len, fp)) {
-        std::cerr << "GetSysMemInfo() error! fail to read!" << std::endl;
-        fclose(fp);
-        return -1;
-    }
-    fclose(fp);
-    sscanf(buf1, "%s%d", name, &mem_total);
-    sscanf(buf2, "%s%d", name, &mem_free);
-    sscanf(buf4, "%s%d", name, &mem_buffers);
-    sscanf(buf5, "%s%d", name, &mem_cached);
 
-    total = (double) mem_total / 1024.0;
-    free = (double) mem_free / 1024.0;
-
-    return 0;
-}
-
-int dirInfo(const string &dir, int &total, int &free) {
-    struct statfs diskInfo;
-    // 设备挂载的节点
-    if (statfs(dir.c_str(), &diskInfo) == 0) {
-        uint64_t blocksize = diskInfo.f_bsize;                   // 每一个block里包含的字节数
-        uint64_t totalsize = blocksize * diskInfo.f_blocks;      // 总的字节数，f_blocks为block的数目
-        uint64_t freeDisk = diskInfo.f_bfree * blocksize;       // 剩余空间的大小
-        uint64_t availableDisk = diskInfo.f_bavail * blocksize; // 可用空间大小
-        total = (double) totalsize / (1024.0 * 1024.0);
-        free = (double) freeDisk / (1024.0 * 1024.0);
-        return 0;
+    // 提取驱动器根路径（如"C:\"）
+    std::string rootPath = currentDir;
+    if (rootPath.size() >= 2 && rootPath[1] == ':') {
+        rootPath = rootPath.substr(0, 3); // 转换为"C:\"形式
     } else {
-        total = 0;
-        free = 0;
-        return -1;
+        // 可能是UNC路径或其他格式
+        return false;
     }
+
+    if (GetDiskFreeSpaceExA(rootPath.c_str(), &availableBytes, &totalBytes, &freeBytes)) {
+        info.total = totalBytes.QuadPart;
+        info.free = freeBytes.QuadPart;
+        info.available = availableBytes.QuadPart;
+        return true;
+    }
+    return false;
+#else
+    // Unix/Linux/macOS实现
+    char currentDir[PATH_MAX];
+    if (!getcwd(currentDir, sizeof(currentDir))) {
+        return false;
+    }
+
+    struct statvfs vfs;
+    if (statvfs(currentDir, &vfs) != 0) {
+        return false;
+    }
+
+    // 计算空间大小
+    info.total = vfs.f_blocks * vfs.f_frsize;
+    info.free = vfs.f_bfree * vfs.f_frsize;
+    info.available = vfs.f_bavail * vfs.f_frsize;
+    return true;
+#endif
 }
 
 int getMAC(string &mac) {
@@ -609,62 +682,61 @@ int getMAC(string &mac) {
 }
 
 /*取板卡本地ip地址和n2n地址 */
-int getIpaddr(string &ethIp, string &n2nIp) {
-    int ret = 0;
-    struct ifaddrs *ifAddrStruct = nullptr;
-    struct ifaddrs *pifAddrStruct = nullptr;
-    void *tmpAddrPtr;
-
-    getifaddrs(&ifAddrStruct);
-
-    if (ifAddrStruct != nullptr) {
-        pifAddrStruct = ifAddrStruct;
-    }
-
-    while (ifAddrStruct != nullptr) {
-        if (ifAddrStruct->ifa_addr == nullptr) {
-            ifAddrStruct = ifAddrStruct->ifa_next;
-            continue;
-        }
-
-        if (ifAddrStruct->ifa_addr->sa_family == AF_INET) { // check it is IP4
-            // is a valid IP4 Address
-            tmpAddrPtr = &((struct sockaddr_in *) ifAddrStruct->ifa_addr)->sin_addr;
-            char addressBuffer[INET_ADDRSTRLEN];
-            inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
-            if (strcmp(ifAddrStruct->ifa_name, "eth0") == 0) {
-                ethIp = string(addressBuffer);
-            } else if (strcmp(ifAddrStruct->ifa_name, "n2n0") == 0) {
-                n2nIp = string(addressBuffer);
-            }
-        }
-
-        ifAddrStruct = ifAddrStruct->ifa_next;
-    }
-
-    if (pifAddrStruct != nullptr) {
-        freeifaddrs(pifAddrStruct);
-    }
-
-    return ret;
-}
-
-bool isProcessRun(string proc) {
-    bool ret = false;
-    string cmd = "ps -C " + proc + " |wc -l";
-    string output;
-    runCmd(cmd, &output);
-    if (!output.empty()) {
-        int num = atoi(output.c_str());
-        if (num > 1) {
-            ret = true;
-        }
-    }
-
-    return ret;
-}
-
-#endif
+//int getIpaddr(string &ethIp, string &n2nIp) {
+//    int ret = 0;
+//    struct ifaddrs *ifAddrStruct = nullptr;
+//    struct ifaddrs *pifAddrStruct = nullptr;
+//    void *tmpAddrPtr;
+//
+//    getifaddrs(&ifAddrStruct);
+//
+//    if (ifAddrStruct != nullptr) {
+//        pifAddrStruct = ifAddrStruct;
+//    }
+//
+//    while (ifAddrStruct != nullptr) {
+//        if (ifAddrStruct->ifa_addr == nullptr) {
+//            ifAddrStruct = ifAddrStruct->ifa_next;
+//            continue;
+//        }
+//
+//        if (ifAddrStruct->ifa_addr->sa_family == AF_INET) { // check it is IP4
+//            // is a valid IP4 Address
+//            tmpAddrPtr = &((struct sockaddr_in *) ifAddrStruct->ifa_addr)->sin_addr;
+//            char addressBuffer[INET_ADDRSTRLEN];
+//            inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
+//            if (strcmp(ifAddrStruct->ifa_name, "eth0") == 0) {
+//                ethIp = string(addressBuffer);
+//            } else if (strcmp(ifAddrStruct->ifa_name, "n2n0") == 0) {
+//                n2nIp = string(addressBuffer);
+//            }
+//        }
+//
+//        ifAddrStruct = ifAddrStruct->ifa_next;
+//    }
+//
+//    if (pifAddrStruct != nullptr) {
+//        freeifaddrs(pifAddrStruct);
+//    }
+//
+//    return ret;
+//}
+//
+//bool isProcessRun(string proc) {
+//    bool ret = false;
+//    string cmd = "ps -C " + proc + " |wc -l";
+//    string output;
+//    runCmd(cmd, &output);
+//    if (!output.empty()) {
+//        int num = atoi(output.c_str());
+//        if (num > 1) {
+//            ret = true;
+//        }
+//    }
+//
+//    return ret;
+//}
+//
 
 template<typename Func, typename... Args>
 auto measureExecutionTime(Func &&func, Args &&... args, double &elapsedTime) -> decltype(auto) {

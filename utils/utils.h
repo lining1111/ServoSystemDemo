@@ -95,7 +95,6 @@ bool isIPv6(string IP);
 
 string validIPAddress(string IP);
 
-#if defined(__linux__)
 void GetDirFiles(const string &path, vector<string> &array);
 
 //获取/dev目录下的文件集合
@@ -105,18 +104,27 @@ void CreatePath(const std::string &path);
 
 double cpuUtilizationRatio();
 
-double cpuTemperature();
+struct MemoryInfo {
+    uint64_t total;     // 总内存(bytes)
+    uint64_t available; // 可用内存(bytes)
+    uint64_t used;      // 已用内存(bytes)
+    double usage;       // 内存使用率(0-1)
+};
 
-int memoryInfo(int &total, int &free);
-
-int dirInfo(const string &dir, int &total, int &free);
+bool GetMemoryInfo(MemoryInfo& info);
+struct DiskSpaceInfo {
+    uint64_t total;     // 总空间大小（字节）
+    uint64_t free;      // 剩余空间大小（字节）
+    uint64_t available; // 可用空间大小（字节）
+};
+bool GetCurrentDirectorySpace(DiskSpaceInfo& info);
 
 int getMAC(string &mac);
 
-int getIpaddr(string &ethIp, string &n2nIp);
+//int getIpaddr(string &ethIp, string &n2nIp);
+//
+//bool isProcessRun(string proc);
 
-bool isProcessRun(string proc);
-#endif
 //计算函数执行耗时
 template<typename Func, typename... Args>
 auto measureExecutionTime(Func &&func, Args &&... args, double &elapsedTime) -> decltype(auto);
