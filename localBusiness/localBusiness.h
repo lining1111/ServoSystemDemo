@@ -101,6 +101,8 @@ public:
 
     void StopTimerTaskAll();
 
+    void ShowInfo();
+
 public:
     utils::Timer timerKeep;
 

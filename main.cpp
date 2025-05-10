@@ -14,10 +14,24 @@
 #include "localBusiness/localBusiness.h"
 
 bool isExit = false;
+
 void handleSignal(int sig) {
-        cout << "exit" << endl;
-        isExit = true;
+    cout << "exit" << endl;
+    isExit = true;
 }
+
+//获取接入客户端列表
+void handleSignalUSR1(int sig) {
+    LOG(WARNING)<<"USR1:show local info";
+    auto localBusiness = LocalBusiness::instance();
+    if (!localBusiness) {
+        LOG(WARNING) << "localBusiness is null";
+    } else {
+        localBusiness->ShowInfo();
+    }
+
+}
+
 
 DEFINE_int32(port, 10001, "本地服务端端口号，默认10001");
 DEFINE_int32(keep, 5, "日志清理周期 单位day，默认5");
@@ -43,6 +57,7 @@ int main(int argc, char **argv) {
     device.Init();
 #if defined(__linux__)
     signal(SIGPIPE, SIG_IGN);
+    signal(SIGUSR1,handleSignalUSR1);//USR1 show local info
 #endif
     signal(SIGINT, handleSignal);//Ctrl+C
     signal(SIGTERM, handleSignal);//kill
