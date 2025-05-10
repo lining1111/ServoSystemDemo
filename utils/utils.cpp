@@ -9,7 +9,9 @@
 #include <algorithm>
 #include <cerrno>
 #include <iostream>
+
 #if defined(__linux__)
+
 #include <unistd.h>
 #include <sys/resource.h>
 #include <sys/times.h>
@@ -22,15 +24,24 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <dirent.h>
+
 #elif defined(WIN32)
 #include <windows.h>
 #include <pdh.h>
 #include <pdhmsg.h>
 #pragma comment(lib, "pdh.lib")
 #endif
+
 #include <chrono>
+#include <Poco/File.h>
+#include <Poco/Path.h>
 #include "Poco/UUID.h"
 #include "Poco/UUIDGenerator.h"
+#include <Poco/Process.h>
+#include <Poco/PipeStream.h>
+#include <Poco/StreamCopier.h>
+#include <Poco/Net/NetworkInterface.h>
+#include <Poco/DirectoryIterator.h>
 
 uint16_t swap_uint16(uint16_t val) {
     return ((val & 0xff00) >> 8) | ((val & 0x00ff) << 8);
@@ -341,7 +352,7 @@ string getIpStr(unsigned int ip) {
 
     x.addr = ip;
     char buffer[64];
-    memset(buffer, 0,64);
+    memset(buffer, 0, 64);
     sprintf(buffer, "%d.%d.%d.%d", x.s1, x.s2, x.s3, x.s4);
 
     return string(buffer);
@@ -423,71 +434,37 @@ string validIPAddress(string IP) {
 
 
 void GetDirFiles(const string &path, vector<string> &array) {
-    DIR *dir;
-    struct dirent *ptr;
-    if ((dir = opendir(path.c_str())) == nullptr) {
-        printf("can not open dir %s\n", path.c_str());
-        return;
-    } else {
-        while ((ptr = readdir(dir)) != nullptr) {
-            if ((strcmp(ptr->d_name, ".") == 0) || (strcmp(ptr->d_name, "..") == 0)) {
-//            printf("it is dir\n");
-            } else if (ptr->d_type == DT_REG) {
-                string name = ptr->d_name;
-                array.push_back(name);
+    try {
+        Poco::DirectoryIterator it(path);
+        Poco::DirectoryIterator end;
+        while (it != end) {
+            if (it->isFile()) // 判断是文件还是子目录
+            {
+                array.push_back(it.name());
+//                std::cout << it.path().toString() << std::endl;        //获取当前文件的的绝对路径名，it.name()只表示文件名
             }
+//            else {
+////                std::cout << "DirectoryName: " << it.path().toString() << std::endl;    //输出当前目录的绝对路径名（包含文件夹的名字）
+//                GetDirFiles(it.path().toString(), array);
+//            }
+            ++it;
         }
-        closedir(dir);
+    }
+    catch (Poco::Exception &exc) {
+//        std::cerr << exc.displayText() << std::endl;
+
     }
 }
 
-vector<string> getDevList() {
-    vector<string> list;
-    // 打开 /dev 目录
-    DIR *dir = opendir("/dev");
-    if (dir == nullptr) {
-        perror("opendir");
-        return list;
-    }
-
-    // 读取目录项
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != nullptr) {
-        // 过滤掉当前目录('.')和上级目录('..')
-        if (entry->d_name[0] != '.') {
-//            printf("%s\n", entry->d_name);
-            list.emplace_back(entry->d_name);
-        }
-    }
-
-    // 关闭目录
-    closedir(dir);
-
-    return list;
-}
 
 void CreatePath(const std::string &path) {
-
-    DIR *dir = nullptr;
-    dir = opendir(path.c_str());
-    //目录不存在
-    if (!dir) {
-        vector<string> v = StringSplit(path, "/");
-        string curpath;
-        //一级一级的创建目录
-        for (size_t i = 0; i < v.size(); i++) {
-            curpath += v[i];
-            curpath += "/";
-            DIR *curdir = nullptr;
-            curdir = opendir(curpath.c_str());
-            if (!curdir) {
-                mkdir(curpath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);//创建目录
-            } else {
-                closedir(curdir);
-            }
-        }
+    Poco::Path dirPath(path);
+    Poco::File dir(dirPath);
+    if (!dir.exists()) {
+        dir.createDirectories(); // 递归创建多级目录
+        std::cout << "Created directory: " << dirPath.toString() << std::endl;
     } else {
-        closedir(dir);
+        std::cout << "Directory already exists." << std::endl;
     }
 }
 
@@ -521,7 +498,7 @@ double cpuUtilizationRatio() {
     static double previousTotalTime = 0;
     static double previousIdleTime = 0;
 
-    FILE* file = fopen("/proc/stat", "r");
+    FILE *file = fopen("/proc/stat", "r");
     if (file) {
         char line[256];
         if (fgets(line, sizeof(line), file)) {
@@ -555,7 +532,7 @@ double cpuUtilizationRatio() {
 }
 
 
-bool GetMemoryInfo(MemoryInfo& info) {
+bool GetMemoryInfo(MemoryInfo &info) {
 #if defined(_WIN32)
     // Windows实现
     MEMORYSTATUSEX memStatus;
@@ -588,7 +565,7 @@ bool GetMemoryInfo(MemoryInfo& info) {
     return true;
 }
 
-bool GetCurrentDirectorySpace(DiskSpaceInfo& info) {
+bool GetCurrentDirectorySpace(DiskSpaceInfo &info) {
 #if defined(_WIN32) || defined(_WIN64)
     // Windows实现
     ULARGE_INTEGER totalBytes, freeBytes, availableBytes;
@@ -635,108 +612,51 @@ bool GetCurrentDirectorySpace(DiskSpaceInfo& info) {
 #endif
 }
 
-int getMAC(string &mac) {
-    struct ifreq ifr;
-    struct ifconf ifc;
-    char buf[2048];
-    int success = 0;
+void getAllNetworkInterfaces(vector<NetworkInfo> &networks) {
+    Poco::Net::NetworkInterface::Map interfaces = Poco::Net::NetworkInterface::map();
 
-    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-    if (sock == -1) {
-        return -1;
+    for (const auto &iface: interfaces) {
+        std::cout << "Interface: " << iface.second.name() << std::endl;
+        std::cout << "  IP Address: " << iface.second.address().toString() << std::endl;
+        std::cout << "  Subnet Mask: " << iface.second.subnetMask().toString() << std::endl;
+        std::cout << "  MAC Address: " << iface.second.macAddress() << std::endl;
+        std::cout << "--------------------------------" << std::endl;
+        NetworkInfo item;
+        item.isUp = iface.second.isUp();
+        item.name = iface.second.name();
+        item.ip = iface.second.address().toString();
+        item.mask = iface.second.subnetMask().toString();
+        item.mac.assign(iface.second.macAddress().begin(), iface.second.macAddress().end());
     }
-
-    ifc.ifc_len = sizeof(buf);
-    ifc.ifc_buf = buf;
-    if (ioctl(sock, SIOCGIFCONF, &ifc) == -1) {
-        close(sock);
-        return -1;
-    }
-
-    struct ifreq *it = ifc.ifc_req;
-    const struct ifreq *const end = it + (ifc.ifc_len / sizeof(struct ifreq));
-    char szMac[64];
-    int count = 0;
-    for (; it != end; ++it) {
-        strcpy(ifr.ifr_name, it->ifr_name);
-        if (ioctl(sock, SIOCGIFFLAGS, &ifr) == 0) {
-            if (!(ifr.ifr_flags & IFF_LOOPBACK)) { // don't count loopback
-                if (ioctl(sock, SIOCGIFHWADDR, &ifr) == 0) {
-                    count++;
-                    unsigned char *ptr;
-                    ptr = (unsigned char *) &ifr.ifr_ifru.ifru_hwaddr.sa_data[0];
-                    snprintf(szMac, 64, "%02x:%02x:%02x:%02x:%02x:%02x", *ptr, *(ptr + 1), *(ptr + 2), *(ptr + 3),
-                             *(ptr + 4), *(ptr + 5));
-                    mac = string(szMac);
-                    break;
-                }
-            }
-        } else {
-            close(sock);
-            return -1;
-        }
-    }
-
-    close(sock);
-    return 0;
 }
 
-/*取板卡本地ip地址和n2n地址 */
-//int getIpaddr(string &ethIp, string &n2nIp) {
-//    int ret = 0;
-//    struct ifaddrs *ifAddrStruct = nullptr;
-//    struct ifaddrs *pifAddrStruct = nullptr;
-//    void *tmpAddrPtr;
-//
-//    getifaddrs(&ifAddrStruct);
-//
-//    if (ifAddrStruct != nullptr) {
-//        pifAddrStruct = ifAddrStruct;
-//    }
-//
-//    while (ifAddrStruct != nullptr) {
-//        if (ifAddrStruct->ifa_addr == nullptr) {
-//            ifAddrStruct = ifAddrStruct->ifa_next;
-//            continue;
-//        }
-//
-//        if (ifAddrStruct->ifa_addr->sa_family == AF_INET) { // check it is IP4
-//            // is a valid IP4 Address
-//            tmpAddrPtr = &((struct sockaddr_in *) ifAddrStruct->ifa_addr)->sin_addr;
-//            char addressBuffer[INET_ADDRSTRLEN];
-//            inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
-//            if (strcmp(ifAddrStruct->ifa_name, "eth0") == 0) {
-//                ethIp = string(addressBuffer);
-//            } else if (strcmp(ifAddrStruct->ifa_name, "n2n0") == 0) {
-//                n2nIp = string(addressBuffer);
-//            }
-//        }
-//
-//        ifAddrStruct = ifAddrStruct->ifa_next;
-//    }
-//
-//    if (pifAddrStruct != nullptr) {
-//        freeifaddrs(pifAddrStruct);
-//    }
-//
-//    return ret;
-//}
-//
-//bool isProcessRun(string proc) {
-//    bool ret = false;
-//    string cmd = "ps -C " + proc + " |wc -l";
-//    string output;
-//    runCmd(cmd, &output);
-//    if (!output.empty()) {
-//        int num = atoi(output.c_str());
-//        if (num > 1) {
-//            ret = true;
-//        }
-//    }
-//
-//    return ret;
-//}
-//
+
+bool isProcessRunning(string processName) {
+    try {
+        // 构造 pgrep 命令
+        std::vector<std::string> args = {processName};
+        Poco::Pipe outPipe;
+        Poco::ProcessHandle ph = Poco::Process::launch(
+                "pgrep",
+                args,
+                0,  // stdin
+                &outPipe,  // stdout
+                0   // stderr
+        );
+
+        // 读取命令输出
+        Poco::PipeInputStream istr(outPipe);
+        std::string output;
+        Poco::StreamCopier::copyToString(istr, output);
+
+        // 如果 pgrep 返回非空，说明进程存在
+        return !output.empty();
+    } catch (const Poco::Exception &e) {
+        std::cerr << "Error executing pgrep: " << e.displayText() << std::endl;
+        return false;
+    }
+}
+
 
 template<typename Func, typename... Args>
 auto measureExecutionTime(Func &&func, Args &&... args, double &elapsedTime) -> decltype(auto) {

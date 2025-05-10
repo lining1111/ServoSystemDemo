@@ -19,7 +19,6 @@ uint16_t swap_uint16(uint16_t val);
 uint32_t swap_uint32(uint32_t val);
 
 
-
 int runCmd(const std::string &command, std::string *output = nullptr,
            bool redirect_stderr = false);
 
@@ -97,8 +96,7 @@ string validIPAddress(string IP);
 
 void GetDirFiles(const string &path, vector<string> &array);
 
-//获取/dev目录下的文件集合
-vector<string> getDevList();
+
 //创建路径文件夹
 void CreatePath(const std::string &path);
 
@@ -111,19 +109,27 @@ struct MemoryInfo {
     double usage;       // 内存使用率(0-1)
 };
 
-bool GetMemoryInfo(MemoryInfo& info);
+bool GetMemoryInfo(MemoryInfo &info);
+
 struct DiskSpaceInfo {
     uint64_t total;     // 总空间大小（字节）
     uint64_t free;      // 剩余空间大小（字节）
     uint64_t available; // 可用空间大小（字节）
 };
-bool GetCurrentDirectorySpace(DiskSpaceInfo& info);
 
-int getMAC(string &mac);
+bool GetCurrentDirectorySpace(DiskSpaceInfo &info);
 
-//int getIpaddr(string &ethIp, string &n2nIp);
-//
-//bool isProcessRun(string proc);
+struct NetworkInfo {
+    bool isUp = false;// 网络是否连接
+    string name; // 网络接口名称
+    string ip;   // IP地址
+    string mask; // 子网掩码
+    string mac;  // MAC地址
+};
+
+void getAllNetworkInterfaces(vector<NetworkInfo> &networks);
+
+bool isProcessRunning(string processName);
 
 //计算函数执行耗时
 template<typename Func, typename... Args>

@@ -8,10 +8,8 @@
 #include <sys/stat.h>
 #include <fstream>
 #include <iostream>
-#include "Poco/DirectoryIterator.h"
-#include <Poco/Exception.h>
+#include "utils/utils.h"
 
-using Poco::DirectoryIterator;
 
 GlogHelper::GlogHelper(std::string _program, int _keep, std::string _logDir, bool _isSendSTDOUT) :
         program(_program), keepDays(_keep), logDir(_logDir), isSendSTDOUT(_isSendSTDOUT) {
@@ -39,42 +37,6 @@ GlogHelper::~GlogHelper() {
         LOG(ERROR) << e.what();
     }
     google::ShutdownGoogleLogging();
-}
-
-static void GetDirFiles(const std::string &path, std::vector<std::string> &array) {
-
-    try {
-        DirectoryIterator it(path);
-        DirectoryIterator end;
-        while (it != end) {
-            if (it->isFile()) // 判断是文件还是子目录
-            {
-                array.push_back(it.name());
-//                std::cout << it.path().toString() << std::endl;        //获取当前文件的的绝对路径名，it.name()只表示文件名
-            }
-//            else {
-////                std::cout << "DirectoryName: " << it.path().toString() << std::endl;    //输出当前目录的绝对路径名（包含文件夹的名字）
-//                GetDirFiles(it.path().toString(), array);
-//            }
-            ++it;
-        }
-    }
-    catch (Poco::Exception &exc) {
-//        std::cerr << exc.displayText() << std::endl;
-
-    }
-}
-
-static bool startsWith(const std::string &str, const std::string &prefix) {
-    return (str.rfind(prefix, 0) == 0);
-}
-
-static bool endsWith(const std::string &str, const std::string &suffix) {
-    if (suffix.length() > str.length()) {
-        return false;
-    }
-
-    return (str.rfind(suffix) == (str.length() - suffix.length()));
 }
 
 int GlogHelper::cleaner(GlogHelper *local) {
