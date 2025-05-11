@@ -100,8 +100,6 @@ void GetDirFiles(const string &path, vector<string> &array);
 //创建路径文件夹
 void CreatePath(const std::string &path);
 
-double cpuUtilizationRatio();
-
 struct MemoryInfo {
     uint64_t total;     // 总内存(bytes)
     uint64_t available; // 可用内存(bytes)

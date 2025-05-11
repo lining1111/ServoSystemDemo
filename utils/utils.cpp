@@ -26,6 +26,7 @@
 #include <dirent.h>
 
 #elif defined(WIN32)
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <pdh.h>
 #include <pdhmsg.h>
@@ -467,70 +468,6 @@ void CreatePath(const std::string &path) {
         std::cout << "Directory already exists." << std::endl;
     }
 }
-
-double cpuUtilizationRatio() {
-#ifdef _WIN32
-    // Windows实现
-    FILETIME idleTime, kernelTime, userTime;
-
-    if (GetSystemTimes(&idleTime, &kernelTime, &userTime)) {
-        static uint64_t previousIdleTime = 0;
-        static uint64_t previousKernelTime = 0;
-        static uint64_t previousUserTime = 0;
-
-        uint64_t idle = (uint64_t(idleTime.dwHighDateTime) << 32) | idleTime.dwLowDateTime;
-        uint64_t kernel = (uint64_t(kernelTime.dwHighDateTime) << 32) | kernelTime.dwLowDateTime;
-        uint64_t user = (uint64_t(userTime.dwHighDateTime) << 32) | userTime.dwLowDateTime;
-
-        uint64_t system = kernel + user;
-        uint64_t idleDelta = idle - previousIdleTime;
-        uint64_t systemDelta = system - previousSystemTime;
-
-        previousIdleTime = idle;
-        previousSystemTime = system;
-
-        if (systemDelta != 0 && idleDelta <= systemDelta) {
-            return (systemDelta - idleDelta) * 100.0 / systemDelta;
-        }
-    }
-#else
-    // Linux/macOS实现
-    static double previousTotalTime = 0;
-    static double previousIdleTime = 0;
-
-    FILE *file = fopen("/proc/stat", "r");
-    if (file) {
-        char line[256];
-        if (fgets(line, sizeof(line), file)) {
-            if (strncmp(line, "cpu ", 4) == 0) {
-                double user, nice, system, idle, iowait, irq, softirq;
-
-                sscanf(line + 5, "%lf %lf %lf %lf %lf %lf %lf",
-                       &user, &nice, &system, &idle, &iowait, &irq, &softirq);
-
-                double totalTime = user + nice + system + idle + iowait + irq + softirq;
-                double idleTime = idle;
-
-                double totalDelta = totalTime - previousTotalTime;
-                double idleDelta = idleTime - previousIdleTime;
-
-                previousTotalTime = totalTime;
-                previousIdleTime = idleTime;
-
-                if (totalDelta != 0 && idleDelta <= totalDelta) {
-                    fclose(file);
-                    return (totalDelta - idleDelta) * 100.0 / totalDelta;
-                }
-            }
-        }
-        fclose(file);
-    }
-#endif
-
-    return -1.0; // 获取失败
-
-}
-
 
 bool GetMemoryInfo(MemoryInfo &info) {
 #if defined(_WIN32)

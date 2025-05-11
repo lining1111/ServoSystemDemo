@@ -50,7 +50,7 @@ find_package(OpenSSL REQUIRED)
 find_package(indicators REQUIRED)
 
 # windows不支持 m pthread
-if (UNIX)
+if (CMAKE_HOST_SYSTEM_NAME MATCHES "Linux")
     set(LIBS ${LIBS} m pthread)
 endif ()
 
