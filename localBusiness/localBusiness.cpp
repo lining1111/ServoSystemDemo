@@ -2,7 +2,7 @@
 // Created by lining on 7/19/24.
 //
 
-#if defined(__WIN32)
+#ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #endif
 

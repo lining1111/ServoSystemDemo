@@ -162,35 +162,40 @@ int Handle##xxx(const string &h, const string &content) { \
 }                                           \
 
 
+static void * _FindClient(const string &peerAddress){
+    auto localBusiness = LocalBusiness::instance();
+    LocalBusiness::CLIType clientType;
+    auto client = localBusiness->FindClient(peerAddress, clientType);
+
+    switch (clientType) {
+        case LocalBusiness::CT_LOCALTCP:
+        case LocalBusiness::CT_REMOTETCP: {
+            if (client != nullptr) {
+                ((MyTcpHandler *) client)->timeRecv = getTimestampMs();
+            }
+        }
+            break;
+        case LocalBusiness::CT_LOCALWS: {
+            if (client != nullptr) {
+                ((MyWebsocketClient *) client)->timeRecv = getTimestampMs();
+            }
+        }
+            break;
+        case LocalBusiness::CT_REMOTEWS: {
+            if (client != nullptr) {
+                ((MyWebSocketRequestHandler *) client)->timeRecv = getTimestampMs();
+            }
+        }
+            break;
+    }
+    return client;
+}
+
 class HandlerHeartbeat : public Handler<Com, Com> {
 public:
     void proc() final {
-        auto localBusiness = LocalBusiness::instance();
-        LocalBusiness::CLIType cliType;
-        auto client = localBusiness->FindClient(_handler, cliType);
-
-        switch (cliType) {
-            case LocalBusiness::CT_LOCALTCP:
-            case LocalBusiness::CT_REMOTETCP: {
-                if (client != nullptr) {
-                    ((MyTcpHandler *) client)->timeRecv = getTimestampMs();
-                }
-            }
-                break;
-            case LocalBusiness::CT_LOCALWS: {
-                if (client != nullptr) {
-                    ((MyWebsocketClient *) client)->timeRecv = getTimestampMs();
-                }
-            }
-                break;
-            case LocalBusiness::CT_REMOTEWS: {
-                if (client != nullptr) {
-                    ((MyWebSocketRequestHandler *) client)->timeRecv = getTimestampMs();
-                }
-            }
-                break;
-        }
-
+        auto client = _FindClient(_handler);
+        rsp->guid = req->guid;
         rsp->param = "rsp";
     }
 };
