@@ -35,19 +35,18 @@ void MyWebSocketRequestHandler::handleRequest(HTTPServerRequest &request, HTTPSe
         _peerAddress = _ws->peerAddress().toString();
         auto localBusiness = LocalBusiness::instance();
         localBusiness->addConn_ws(this);
-        int flags;
-        int n;
+        int flags = 0;
+        int len = 0;
         do {
             memset(recvBuf, 0, 1024 * 1024);
             int recvLen = (_fsm->GetWriteLen() < (1024 * 1024)) ? _fsm->GetWriteLen() : (1024 * 1024);
-            int flags;
             int len = _ws->receiveFrame(recvBuf, recvLen, flags);
             if (len == 0 && flags == 0) {
                 break;
             } else {
                 _fsm->TriggerAction(recvBuf, len);
             }
-        } while (n > 0 || (flags & WebSocket::FRAME_OP_BITMASK) != WebSocket::FRAME_OP_CLOSE);
+        } while (len > 0 || (flags & WebSocket::FRAME_OP_BITMASK) != WebSocket::FRAME_OP_CLOSE);
         //Remove ws from the client array.
         LOG(WARNING) << "websocket client disconnect:" << _ws->peerAddress().toString();
         localBusiness->delConn_ws(_ws->peerAddress().toString());
