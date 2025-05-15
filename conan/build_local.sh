@@ -1,4 +1,4 @@
 #!/bin/bash
-echo "local conan build"
+echo "linux x64 conan build"
 rm -rf build/*
 conan install . --build=missing --output-folder=build
