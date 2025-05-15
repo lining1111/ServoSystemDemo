@@ -44,7 +44,10 @@ int main(int argc, char **argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     std::string proFul = std::string(argv[0]);
     std::string pro = getFileName(proFul);
-
+#ifdef WIN32
+    // 设置控制台输出代码页为 UTF-8
+    SetConsoleOutputCP(65001);
+#endif
     GlogHelper glogHelper(pro, FLAGS_keep, FLAGS_logDir, FLAGS_isSendSTDOUT);
 
     LOG(WARNING) << "程序工作目录:" << Poco::Path::current() << ",版本号:" << VERSION_BUILD_TIME;
