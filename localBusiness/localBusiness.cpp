@@ -7,6 +7,8 @@
 #endif
 
 #include "localBusiness.h"
+#include <Poco/LocalDateTime.h>
+#include <Poco/DateTimeFormatter.h>
 
 LocalBusiness *LocalBusiness::m_pInstance = nullptr;
 
@@ -316,7 +318,9 @@ void LocalBusiness::kickoff(uint64_t timeout, uint64_t now) {
 
 
 void LocalBusiness::StartTimerTask() {
-    timerKeep.start(1000 * 3, std::bind(Task_Keep, this));
+    timerKeep.setStartInterval(1000);
+    timerKeep.setPeriodicInterval(3000);
+    timerKeep.start(Poco::TimerCallback<LocalBusiness>(*this, &LocalBusiness::Task_Keep));
 }
 
 void LocalBusiness::StopTimerTaskAll() {
@@ -375,16 +379,14 @@ void LocalBusiness::ShowInfo() {
     }
 }
 
-    void LocalBusiness::Task_Keep(void *p) {
-        if (p == nullptr) {
-            return;
-        }
-        auto local = (LocalBusiness *) p;
-
+    void LocalBusiness::Task_Keep(Poco::Timer &timer) {
+        auto local = this;
         if (local->serverList.empty() && local->clientList.empty()
             && local->wsServerList.empty() && local->wsClientList.empty()) {
             return;
         }
+        Poco::LocalDateTime now;
+        LOG(INFO) << "LocalBusiness::Task_Keep:" << Poco::DateTimeFormatter::format(now, "%Y-%m-%d %H:%M:%S %Z");
 
         if (local->isRun) {
             for (auto &iter: local->serverList) {

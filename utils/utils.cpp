@@ -82,8 +82,9 @@ int runCmd(const std::string &command, std::string *output, bool redirect_stderr
 }
 
 uint64_t getTimestampMs() {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).count();
+//    return std::chrono::duration_cast<std::chrono::milliseconds>(
+//            std::chrono::system_clock::now().time_since_epoch()).count();
+    return Poco::Timestamp().epochMicroseconds() / 1000;
 }
 
 string getGuid() {

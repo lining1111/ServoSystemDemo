@@ -8,7 +8,7 @@
 #include "utils/nonCopyable.hpp"
 #include <map>
 #include <string>
-#include "utils//timeTask.hpp"
+#include "Poco/Timer.h"
 #include "myTcp/MyTcpClient.h"
 #include "myTcp/MyTcpServer.h"
 #include "myWebsocket/MyWebsocketServer.h"
@@ -112,10 +112,10 @@ public:
     void ShowInfo();
 
 public:
-    utils::Timer timerKeep;
+    Poco::Timer timerKeep;
 
 private:
-    static void Task_Keep(void *p);
+    void Task_Keep(Poco::Timer &timer);
 };
 
 
