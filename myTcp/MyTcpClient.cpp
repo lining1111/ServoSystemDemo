@@ -121,7 +121,7 @@ void MyTcpClient::onReadable(ReadableNotification *pNf) {
         }
     }
     catch (Poco::Exception &exc) {
-        LOG(ERROR) << _peerAddress << " receive error:" << exc.code()
+        LOG(ERROR) << _peerAddress << " receive error:" << exc.code() << ","
                    << exc.displayText();
         if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK &&
             exc.code() != POCO_EAGAIN) {
