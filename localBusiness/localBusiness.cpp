@@ -93,6 +93,11 @@ void LocalBusiness::Stop() {
         auto c = iter.second;
         delete c;
     }
+
+    for (auto &iter: wsServerList) {
+        auto s = iter.second;
+        delete s;
+    }
 }
 
 void LocalBusiness::addConn(MyTcpServerHandler *p) {
@@ -379,73 +384,73 @@ void LocalBusiness::ShowInfo() {
     }
 }
 
-    void LocalBusiness::Task_Keep(Poco::Timer &timer) {
-        auto local = this;
-        if (local->serverList.empty() && local->clientList.empty()
-            && local->wsServerList.empty() && local->wsClientList.empty()) {
-            return;
+void LocalBusiness::Task_Keep(Poco::Timer &timer) {
+    auto local = this;
+    if (local->serverList.empty() && local->clientList.empty()
+        && local->wsServerList.empty() && local->wsClientList.empty()) {
+        return;
+    }
+    Poco::LocalDateTime now;
+    LOG(INFO) << "LocalBusiness::Task_Keep:" << Poco::DateTimeFormatter::format(now, "%Y-%m-%d %H:%M:%S %Z");
+
+    if (local->isRun) {
+        for (auto &iter: local->serverList) {
+            auto s = iter.second;
+            if (!s->isListen) {
+                s->ReOpen();
+                if (s->isListen) {
+                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
+                                 << " 重启";
+                } else {
+                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
+                                 << " 重启失败";
+                }
+            }
         }
-        Poco::LocalDateTime now;
-        LOG(INFO) << "LocalBusiness::Task_Keep:" << Poco::DateTimeFormatter::format(now, "%Y-%m-%d %H:%M:%S %Z");
 
-        if (local->isRun) {
-            for (auto &iter: local->serverList) {
-                auto s = iter.second;
-                if (!s->isListen) {
-                    s->ReOpen();
-                    if (s->isListen) {
-                        LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
-                                     << " 重启";
-                    } else {
-                        LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
-                                     << " 重启失败";
-                    }
+        for (auto &iter: local->wsServerList) {
+            auto s = iter.second;
+            if (!s->isListen) {
+                s->ReOpen();
+                if (s->isListen) {
+                    s->Run();
+                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
+                                 << " 重启";
+                } else {
+                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
+                                 << " 重启失败";
                 }
             }
+        }
 
-            for (auto &iter: local->wsServerList) {
-                auto s = iter.second;
-                if (!s->isListen) {
-                    s->ReOpen();
-                    if (s->isListen) {
-                        s->Run();
-                        LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
-                                     << " 重启";
-                    } else {
-                        LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
-                                     << " 重启失败";
-                    }
+        for (auto &iter: local->clientList) {
+            auto c = iter.second;
+            if (c->isNeedReconnect) {
+                c->Reconnect();
+                if (!c->isNeedReconnect) {
+                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
+                                 << " 重启";
+                } else {
+                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
+                                 << " 重启失败";
                 }
             }
+        }
 
-            for (auto &iter: local->clientList) {
-                auto c = iter.second;
-                if (c->isNeedReconnect) {
-                    c->Reconnect();
-                    if (!c->isNeedReconnect) {
-                        LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
-                                     << " 重启";
-                    } else {
-                        LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
-                                     << " 重启失败";
-                    }
-                }
-            }
-
-            for (auto &iter: local->wsClientList) {
-                auto c = iter.second;
-                if (c->isNeedReconnect) {
-                    c->Reconnect();
-                    if (!c->isNeedReconnect) {
-                        LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
-                                     << " 重启";
-                    } else {
-                        LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
-                                     << " 重启失败";
-                    }
+        for (auto &iter: local->wsClientList) {
+            auto c = iter.second;
+            if (c->isNeedReconnect) {
+                c->Reconnect();
+                if (!c->isNeedReconnect) {
+                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
+                                 << " 重启";
+                } else {
+                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
+                                 << " 重启失败";
                 }
             }
         }
     }
+}
 
 
