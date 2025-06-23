@@ -6,16 +6,20 @@
 MyTcpClient::MyTcpClient(string serverip, int serverport) :
         server_ip(serverip), server_port(serverport) {
     recvBuf = new char[1024 * 1024];
-    _reactor.addEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
-                                                                                  &MyTcpClient::onReadable));
+//    _reactor.addEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
+//                                                                                  &MyTcpClient::onReadable));
     startBusiness();
 }
 
 MyTcpClient::~MyTcpClient() {
     LOG(WARNING) << _peerAddress << " disconnected";
 
-    _reactor.removeEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
-                                                                                     &MyTcpClient::onReadable));
+    try {
+        _reactor.removeEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
+                                                                                         &MyTcpClient::onReadable));
+    } catch (Poco::Exception e) {
+        LOG(ERROR) << e.displayText();
+    }
 
     stopBusiness();
     delete[]recvBuf;
@@ -49,6 +53,14 @@ int MyTcpClient::Open() {
     _socket.setSendTimeout(ts1);
     _socket.setKeepAlive(true);
     _socket.setLinger(true, 0);
+
+    try {
+        _reactor.addEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
+                                                                                      &MyTcpClient::onReadable));
+    } catch (Poco::Exception e) {
+        LOG(ERROR) << e.displayText();
+    }
+
     isNeedReconnect = false;
     timeSend = 0;
     timeRecv = 0;
@@ -84,6 +96,14 @@ int MyTcpClient::Reconnect() {
     _socket.setSendTimeout(ts1);
     _socket.setKeepAlive(true);
     _socket.setLinger(true, 0);
+
+    try {
+        _reactor.addEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
+                                                                                      &MyTcpClient::onReadable));
+    } catch (Poco::Exception e) {
+        LOG(ERROR) << e.displayText();
+    }
+
     isNeedReconnect = false;
     timeSend = 0;
     timeRecv = 0;
