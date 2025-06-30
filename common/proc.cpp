@@ -162,7 +162,7 @@ int Handle##xxx(const string &h, const string &content) { \
 }                                           \
 
 
-static void * _FindClient(const string &peerAddress){
+static void * LocalFindClient(const string &peerAddress){
     auto localBusiness = LocalBusiness::instance();
     LocalBusiness::CLIType clientType;
     auto client = localBusiness->FindClient(peerAddress, clientType);
@@ -194,7 +194,7 @@ static void * _FindClient(const string &peerAddress){
 class HandlerHeartbeat : public Handler<Com, Com> {
 public:
     void proc() final {
-        auto client = _FindClient(_handler);
+        auto client = LocalFindClient(_handler);
         rsp->guid = req->guid;
         rsp->param = "rsp";
     }

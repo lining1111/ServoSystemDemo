@@ -51,8 +51,8 @@ void MyTcpServerHandler::onReadable(ReadableNotification *pNf) {
             _fsm->TriggerAction(recvBuf, len);
         }
     }
-    catch (Poco::Exception &exc) {
-        LOG(WARNING) << exc.what();
+    catch (Poco::Exception &e) {
+        LOG(WARNING) << e.displayText();
         auto localBusiness = LocalBusiness::instance();
         localBusiness->delConn(_peerAddress);
         delete this;
@@ -82,8 +82,8 @@ int MyTcpServer::Open() {
     try {
         _s.bind(Poco::Net::SocketAddress(_port));
         _s.listen();
-    } catch (Poco::Exception &exc) {
-        LOG(ERROR) << exc.what();
+    } catch (Poco::Exception &e) {
+        LOG(ERROR) << e.displayText();
         isListen = false;
         return -1;
     }
@@ -100,8 +100,8 @@ int MyTcpServer::ReOpen() {
         _s.close();
         _s.bind(Poco::Net::SocketAddress(_port));
         _s.listen();
-    } catch (Poco::Exception &exc) {
-        LOG(ERROR) << exc.what();
+    } catch (Poco::Exception &e) {
+        LOG(ERROR) << e.displayText();
         isListen = false;
         return -1;
     }

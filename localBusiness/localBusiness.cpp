@@ -163,37 +163,46 @@ void LocalBusiness::stopAllConns_ws() {
 }
 
 void LocalBusiness::Broadcast(const string &msg) {
-    std::unique_lock<std::mutex> lock(mtx);
-    for (auto iter: _conns) {
-        if (iter != nullptr) {
-            iter->SendBase(msg);
-        }
-    }
-
-    std::unique_lock<std::mutex> lock_ws(mtx_ws);
-    for (auto iter: _conns_ws) {
-        if (iter != nullptr) {
-            iter->SendBase(msg);
-        }
-    }
-
-    if (!clientList.empty()) {
-        for (auto iter: clientList) {
-            auto c = iter.second;
-            if (!c->isNeedReconnect) {
-                c->SendBase(msg);
+    {
+        std::unique_lock<std::mutex> lock(mtx);
+        for (const auto &iter: _conns) {
+            if (iter != nullptr) {
+                iter->SendBase(msg);
             }
         }
     }
 
-    if (!wsClientList.empty()) {
-        for (auto iter: wsClientList) {
-            auto c = iter.second;
-            if (!c->isNeedReconnect) {
-                c->SendBase(msg);
+    {
+        std::unique_lock<std::mutex> lock_ws(mtx_ws);
+        for (const auto &iter: _conns_ws) {
+            if (iter != nullptr) {
+                iter->SendBase(msg);
             }
         }
     }
+
+    {
+        if (!clientList.empty()) {
+            for (const auto &iter: clientList) {
+                auto c = iter.second;
+                if (!c->isNeedReconnect) {
+                    c->SendBase(msg);
+                }
+            }
+        }
+    }
+
+    {
+        if (!wsClientList.empty()) {
+            for (const auto &iter: wsClientList) {
+                auto c = iter.second;
+                if (!c->isNeedReconnect) {
+                    c->SendBase(msg);
+                }
+            }
+        }
+    }
+
 }
 
 int LocalBusiness::SendToClient(const string &peerAddress, const string &msg) {
@@ -223,7 +232,7 @@ int LocalBusiness::SendToClient(const string &peerAddress, const string &msg) {
     //如果不是对端的客户端，大概是本地的客户端
     if (!isRemoteClient) {
         if (!clientList.empty()) {
-            for (auto iter: clientList) {
+            for (const auto& iter: clientList) {
                 auto c = iter.second;
                 if (c->_peerAddress == peerAddress && !c->isNeedReconnect) {
                     ret = c->SendBase(msg);
@@ -232,7 +241,7 @@ int LocalBusiness::SendToClient(const string &peerAddress, const string &msg) {
         }
 
         if (!wsClientList.empty()) {
-            for (auto iter: wsClientList) {
+            for (const auto& iter: wsClientList) {
                 auto c = iter.second;
                 if (c->_peerAddress == peerAddress && !c->isNeedReconnect) {
                     ret = c->SendBase(msg);
@@ -273,7 +282,7 @@ void *LocalBusiness::FindClient(const string &peerAddress, CLIType &clientType) 
     //如果不是对端的客户端，大概是本地的客户端
     if (!isRemoteClient) {
         if (!clientList.empty()) {
-            for (auto iter: clientList) {
+            for (const auto& iter: clientList) {
                 auto c = iter.second;
                 if (c->_peerAddress == peerAddress) {
                     ret = iter.second;
@@ -282,7 +291,7 @@ void *LocalBusiness::FindClient(const string &peerAddress, CLIType &clientType) 
             }
         }
         if (!wsClientList.empty()) {
-            for (auto iter: wsClientList) {
+            for (const auto& iter: wsClientList) {
                 auto c = iter.second;
                 if (c->_peerAddress == peerAddress) {
                     ret = iter.second;
@@ -338,7 +347,7 @@ void LocalBusiness::ShowInfo() {
     if (serverList.empty()) {
         LOG(WARNING) << "no local server start";
     } else {
-        for (auto s: serverList) {
+        for (const auto& s: serverList) {
             LOG(WARNING) << "local server: " << s.first << "---" << s.second->_s.address().toString();
             if (_conns.empty()) {
                 LOG(WARNING) << "no remote client connect";
@@ -352,7 +361,7 @@ void LocalBusiness::ShowInfo() {
         if (clientList.empty()) {
             LOG(WARNING) << "no local client start";
         } else {
-            for (auto c: clientList) {
+            for (const auto& c: clientList) {
                 LOG(WARNING) << "local client: " << c.first << "---" << c.second->_peerAddress;
             }
         }
@@ -362,7 +371,7 @@ void LocalBusiness::ShowInfo() {
         if (wsServerList.empty()) {
             LOG(WARNING) << "no local ws server start";
         } else {
-            for (auto s: wsServerList) {
+            for (const auto& s: wsServerList) {
                 LOG(WARNING) << "local ws server: " << s.first << "---127.0.0.1:" << s.second->_port;
                 if (_conns_ws.empty()) {
                     LOG(WARNING) << "no remote ws client connect";
@@ -377,7 +386,7 @@ void LocalBusiness::ShowInfo() {
         if (wsClientList.empty()) {
             LOG(WARNING) << "no local ws client start";
         } else {
-            for (auto c: wsClientList) {
+            for (const auto& c: wsClientList) {
                 LOG(WARNING) << "local ws client: " << c.first << "---" << c.second->_peerAddress;
             }
         }

@@ -57,7 +57,7 @@ int MyTcpClient::Open() {
     try {
         _reactor.addEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
                                                                                       &MyTcpClient::onReadable));
-    } catch (Poco::Exception e) {
+    } catch (Poco::Exception &e) {
         LOG(ERROR) << e.displayText();
     }
 
@@ -133,18 +133,17 @@ void MyTcpClient::onReadable(ReadableNotification *pNf) {
     try {
         int len = _socket.receiveBytes(recvBuf, recvLen);
         if (len <= 0) {
-            LOG(ERROR) << _peerAddress << " receiveBytes " << len;;
+            LOG(ERROR) << _peerAddress << " receiveBytes " << len;
             isNeedReconnect = true;
 
         } else {
             _fsm->TriggerAction(recvBuf, len);
         }
-    }
-    catch (Poco::Exception &exc) {
-        LOG(ERROR) << _peerAddress << " receive error:" << exc.code() << ","
-                   << exc.displayText();
-        if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK &&
-            exc.code() != POCO_EAGAIN) {
+    } catch (Poco::Exception &e) {
+        LOG(ERROR) << _peerAddress << " receive error:" << e.code() << ","
+                   << e.displayText();
+        if (e.code() != POCO_ETIMEDOUT && e.code() != POCO_EWOULDBLOCK &&
+            e.code() != POCO_EAGAIN) {
             isNeedReconnect = true;
         }
     }
