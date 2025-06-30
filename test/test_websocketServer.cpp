@@ -9,8 +9,11 @@ int main(int argc, char **argv) {
     if (srv->Open() == 0) {
         srv->Run();
     }
-    while (1) {
-        sleep(5);
-    }
+//    while (1) {
+//        sleep(5);
+//    }
+    srv->Stop();
+    delete srv;
+
     return 0;
 }

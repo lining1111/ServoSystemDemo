@@ -11,8 +11,10 @@ int main(int argc, char **argv) {
         wsClient->Run();
     }
 
-    while (1) {
-        sleep(5);
-    }
+//    while (1) {
+//        sleep(5);
+//    }
+    delete wsClient;
+
     return 0;
 }

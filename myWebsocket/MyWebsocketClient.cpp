@@ -25,17 +25,18 @@ MyWebsocketClient::MyWebsocketClient(string serverip, int serverport)
 
 MyWebsocketClient::~MyWebsocketClient() {
     LOG(WARNING) << _peerAddress << " disconnected";
-    if (_fsm != nullptr) {
-        delete _fsm;
-        _fsm = nullptr;
-    }
+    stopBusiness();
     delete mtx;
     delete _cs;
     delete _req;
     delete _rsp;
-    stopBusiness();
-    delete[]recvBuf;
     delete _ws;
+    delete[]recvBuf;
+    if (_fsm != nullptr) {
+        delete _fsm;
+        _fsm = nullptr;
+    }
+
 }
 
 int MyWebsocketClient::Open() {
