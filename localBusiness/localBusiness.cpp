@@ -47,7 +47,7 @@ void LocalBusiness::Run() {
         if (s->Open() == 0) {
         }
         s->Run();
-        std::this_thread::sleep_for(std::chrono::milliseconds(3 * 1000));
+        std::this_thread::sleep_for(3s);
     }
 
     for (auto &iter: wsServerList) {
@@ -55,7 +55,7 @@ void LocalBusiness::Run() {
         if (s->Open() == 0) {
             s->Run();
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(3 * 1000));
+        std::this_thread::sleep_for(3s);
     }
 
     for (auto &iter: clientList) {
@@ -63,7 +63,7 @@ void LocalBusiness::Run() {
         if (client->Open() == 0) {
         }
         client->Run();
-        std::this_thread::sleep_for(std::chrono::milliseconds(3 * 1000));
+        std::this_thread::sleep_for(3s);
     }
 
     for (auto &iter: wsClientList) {
@@ -71,7 +71,7 @@ void LocalBusiness::Run() {
         if (client->Open() == 0) {
         }
         client->Run();
-        std::this_thread::sleep_for(std::chrono::milliseconds(3 * 1000));
+        std::this_thread::sleep_for(3s);
     }
 
     StartTimerTask();

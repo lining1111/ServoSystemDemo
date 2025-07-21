@@ -3,6 +3,9 @@
 //
 
 #include "progressbar.h"
+#include <chrono>
+
+using namespace std::chrono_literals;
 
 void test_progressbar() {
     indicators::ProgressBar bar;
@@ -15,7 +18,7 @@ void test_progressbar() {
 
     for (size_t i = 0; i <= 100; ++i) {
         bar.set_progress(i);
-        std::this_thread::sleep_for(std::chrono::milliseconds(25));
+        std::this_thread::sleep_for(25ms);
     }
 
     bar.mark_as_completed();

@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
         if (isExit) {
             break;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(5 * 1000));
+        std::this_thread::sleep_for(5s);
 
         auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();

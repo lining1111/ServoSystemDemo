@@ -274,7 +274,7 @@ int MyWebsocketClient::ThreadProcessPkg(MyWebsocketClient *local) {
 void MyWebsocketClient::ThreadHeartbeat(MyWebsocketClient *local) {
     LOG(WARNING) << local->_peerAddress << " heartbeat thread start";
     while (local->_isRun) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(5 * 1000));
+        std::this_thread::sleep_for(5s);
         if (!local->isNeedReconnect) {
             try {
                 Com req;
