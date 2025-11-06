@@ -5,6 +5,7 @@
 #ifndef TCPSERVER_H
 #define TCPSERVER_H
 
+#include <memory>
 #include "MyTcpHandler.hpp"
 #include "Poco/Net/SocketReactor.h"
 #include "Poco/Net/SocketNotification.h"
@@ -31,7 +32,7 @@ using Poco::Net::ShutdownNotification;
 using Poco::Observer;
 using Poco::Net::NetException;
 
-class MyTcpServerHandler : public MyTcpHandler {
+class MyTcpServerHandler : public MyTcpHandler{
 public:
     SocketReactor &_reactor;
     char *recvBuf = nullptr;

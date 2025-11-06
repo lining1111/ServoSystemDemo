@@ -13,7 +13,6 @@
 LocalBusiness *LocalBusiness::m_pInstance = nullptr;
 
 LocalBusiness *LocalBusiness::instance() {
-
     if (m_pInstance == nullptr) {
         m_pInstance = new LocalBusiness();
     }
@@ -21,22 +20,22 @@ LocalBusiness *LocalBusiness::instance() {
 }
 
 void LocalBusiness::AddServer(const string &name, int port) {
-    auto server = new MyTcpServer(port);
+    auto server = make_shared<MyTcpServer>(port);
     serverList.insert(make_pair(name, server));
 }
 
 void LocalBusiness::AddServer_ws(const string &name, int port) {
-    auto server = new MyWebsocketServer(port);
+    auto server = make_shared<MyWebsocketServer>(port);
     wsServerList.insert(make_pair(name, server));
 }
 
 void LocalBusiness::AddClient(const string &name, const string &cloudIp, int cloudPort) {
-    auto client = new MyTcpClient(cloudIp, cloudPort);//端口号和ip依实际情况而变
+    auto client = make_shared<MyTcpClient>(cloudIp, cloudPort); //端口号和ip依实际情况而变
     clientList.insert(make_pair(name, client));
 }
 
 void LocalBusiness::AddClient_ws(const string &name, const string &cloudIp, int cloudPort) {
-    auto client = new MyWebsocketClient(cloudIp, cloudPort);//端口号和ip依实际情况而变
+    auto client = make_shared<MyWebsocketClient>(cloudIp, cloudPort); //端口号和ip依实际情况而变
     wsClientList.insert(make_pair(name, client));
 }
 
@@ -82,30 +81,30 @@ void LocalBusiness::Stop() {
     isRun = false;
     for (auto &iter: serverList) {
         auto s = iter.second;
-        delete s;
+        s.reset();
     }
     for (auto &iter: clientList) {
         auto c = iter.second;
-        delete c;
+        c.reset();
     }
 
     for (auto &iter: wsClientList) {
         auto c = iter.second;
-        delete c;
+        c.reset();
     }
 
     for (auto &iter: wsServerList) {
         auto s = iter.second;
-        delete s;
+        s.reset();
     }
 }
 
-void LocalBusiness::addConn(MyTcpServerHandler *p) {
+void LocalBusiness::addConn(shared_ptr<MyTcpServerHandler> p) {
     std::unique_lock<std::mutex> lock(mtx);
     _conns.push_back(p);
 }
 
-void LocalBusiness::addConn_ws(MyWebSocketRequestHandler *p) {
+void LocalBusiness::addConn_ws(shared_ptr<MyWebSocketRequestHandler> p) {
     std::unique_lock<std::mutex> lock(mtx_ws);
     _conns_ws.push_back(p);
 }
@@ -145,7 +144,7 @@ void LocalBusiness::stopAllConns() {
             _conns.erase(_conns.begin() + i);
             LOG(WARNING) << "从数组踢出客户端:" << c->_peerAddress;
             c->stopBusiness();
-            delete c;
+            c.reset();
         }
     }
 }
@@ -157,7 +156,7 @@ void LocalBusiness::stopAllConns_ws() {
             auto c = _conns_ws.at(i);
             _conns_ws.erase(_conns_ws.begin() + i);
             LOG(WARNING) << "从ws数组踢出客户端:" << c->_peerAddress;
-            delete c;
+            c.reset();
         }
     }
 }
@@ -202,7 +201,6 @@ void LocalBusiness::Broadcast(const string &msg) {
             }
         }
     }
-
 }
 
 int LocalBusiness::SendToClient(const string &peerAddress, const string &msg) {
@@ -232,7 +230,7 @@ int LocalBusiness::SendToClient(const string &peerAddress, const string &msg) {
     //如果不是对端的客户端，大概是本地的客户端
     if (!isRemoteClient) {
         if (!clientList.empty()) {
-            for (const auto& iter: clientList) {
+            for (const auto &iter: clientList) {
                 auto c = iter.second;
                 if (c->_peerAddress == peerAddress && !c->isNeedReconnect) {
                     ret = c->SendBase(msg);
@@ -241,7 +239,7 @@ int LocalBusiness::SendToClient(const string &peerAddress, const string &msg) {
         }
 
         if (!wsClientList.empty()) {
-            for (const auto& iter: wsClientList) {
+            for (const auto &iter: wsClientList) {
                 auto c = iter.second;
                 if (c->_peerAddress == peerAddress && !c->isNeedReconnect) {
                     ret = c->SendBase(msg);
@@ -261,7 +259,7 @@ void *LocalBusiness::FindClient(const string &peerAddress, CLIType &clientType) 
     for (auto iter: _conns) {
         if (iter != nullptr) {
             if (iter->_peerAddress == peerAddress) {
-                ret = iter;
+                ret = iter.get();
                 clientType = CT_REMOTETCP;
                 isRemoteClient = true;
             }
@@ -272,7 +270,7 @@ void *LocalBusiness::FindClient(const string &peerAddress, CLIType &clientType) 
     for (auto iter: _conns_ws) {
         if (iter != nullptr) {
             if (iter->_peerAddress == peerAddress) {
-                ret = iter;
+                ret = iter.get();
                 clientType = CT_REMOTEWS;
                 isRemoteClient = true;
             }
@@ -282,19 +280,19 @@ void *LocalBusiness::FindClient(const string &peerAddress, CLIType &clientType) 
     //如果不是对端的客户端，大概是本地的客户端
     if (!isRemoteClient) {
         if (!clientList.empty()) {
-            for (const auto& iter: clientList) {
+            for (const auto &iter: clientList) {
                 auto c = iter.second;
                 if (c->_peerAddress == peerAddress) {
-                    ret = iter.second;
+                    ret = iter.second.get();
                     clientType = CT_LOCALTCP;
                 }
             }
         }
         if (!wsClientList.empty()) {
-            for (const auto& iter: wsClientList) {
+            for (const auto &iter: wsClientList) {
                 auto c = iter.second;
                 if (c->_peerAddress == peerAddress) {
-                    ret = iter.second;
+                    ret = iter.second.get();
                     clientType = CT_LOCALWS;
                 }
             }
@@ -311,7 +309,6 @@ void LocalBusiness::kickoff(uint64_t timeout, uint64_t now) {
         if (conn != nullptr) {
             if (abs((long long) now - (long long) conn->timeRecv) > timeout) {
                 LOG(WARNING) << "接收超时,主动断开客户端:" << conn->_peerAddress;
-                delete conn;
                 _conns.erase(_conns.begin() + i);
             }
         }
@@ -323,7 +320,6 @@ void LocalBusiness::kickoff(uint64_t timeout, uint64_t now) {
         if (conn != nullptr) {
             if (abs((long long) now - (long long) conn->timeRecv) > timeout) {
                 LOG(WARNING) << "接收超时,主动断开客户端:" << conn->_peerAddress;
-                delete conn;
                 _conns_ws.erase(_conns_ws.begin() + i);
             }
         }
@@ -347,7 +343,7 @@ void LocalBusiness::ShowInfo() {
     if (serverList.empty()) {
         LOG(WARNING) << "no local server start";
     } else {
-        for (const auto& s: serverList) {
+        for (const auto &s: serverList) {
             LOG(WARNING) << "local server: " << s.first << "---" << s.second->_s.address().toString();
             if (_conns.empty()) {
                 LOG(WARNING) << "no remote client connect";
@@ -361,7 +357,7 @@ void LocalBusiness::ShowInfo() {
         if (clientList.empty()) {
             LOG(WARNING) << "no local client start";
         } else {
-            for (const auto& c: clientList) {
+            for (const auto &c: clientList) {
                 LOG(WARNING) << "local client: " << c.first << "---" << c.second->_peerAddress;
             }
         }
@@ -371,7 +367,7 @@ void LocalBusiness::ShowInfo() {
         if (wsServerList.empty()) {
             LOG(WARNING) << "no local ws server start";
         } else {
-            for (const auto& s: wsServerList) {
+            for (const auto &s: wsServerList) {
                 LOG(WARNING) << "local ws server: " << s.first << "---127.0.0.1:" << s.second->_port;
                 if (_conns_ws.empty()) {
                     LOG(WARNING) << "no remote ws client connect";
@@ -386,7 +382,7 @@ void LocalBusiness::ShowInfo() {
         if (wsClientList.empty()) {
             LOG(WARNING) << "no local ws client start";
         } else {
-            for (const auto& c: wsClientList) {
+            for (const auto &c: wsClientList) {
                 LOG(WARNING) << "local ws client: " << c.first << "---" << c.second->_peerAddress;
             }
         }
@@ -409,10 +405,10 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
                 s->ReOpen();
                 if (s->isListen) {
                     LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
-                                 << " 重启";
+                            << " 重启";
                 } else {
                     LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
-                                 << " 重启失败";
+                            << " 重启失败";
                 }
             }
         }
@@ -424,10 +420,10 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
                 if (s->isListen) {
                     s->Run();
                     LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
-                                 << " 重启";
+                            << " 重启";
                 } else {
                     LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
-                                 << " 重启失败";
+                            << " 重启失败";
                 }
             }
         }
@@ -438,10 +434,10 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
                 c->Reconnect();
                 if (!c->isNeedReconnect) {
                     LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
-                                 << " 重启";
+                            << " 重启";
                 } else {
                     LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
-                                 << " 重启失败";
+                            << " 重启失败";
                 }
             }
         }
@@ -452,14 +448,12 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
                 c->Reconnect();
                 if (!c->isNeedReconnect) {
                     LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
-                                 << " 重启";
+                            << " 重启";
                 } else {
                     LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
-                                 << " 重启失败";
+                            << " 重启失败";
                 }
             }
         }
     }
 }
-
-

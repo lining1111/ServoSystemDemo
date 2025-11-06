@@ -11,7 +11,7 @@ MyTcpServerHandler::MyTcpServerHandler(StreamSocket &socket, SocketReactor &reac
     _peerAddress = socket.peerAddress().toString();
     LOG(WARNING) << "connection from " << _peerAddress;
     auto localBusiness = LocalBusiness::instance();
-    localBusiness->addConn(this);
+    localBusiness->addConn(shared_ptr<MyTcpServerHandler>(this));
     _reactor.addEventHandler(_socket, Observer<MyTcpServerHandler, ShutdownNotification>(*this,
                                                                                          &MyTcpServerHandler::onSocketShutdown));
     _reactor.addEventHandler(_socket, Observer<MyTcpServerHandler, ReadableNotification>(*this,
@@ -46,7 +46,6 @@ void MyTcpServerHandler::onReadable(ReadableNotification *pNf) {
             LOG(WARNING) << _peerAddress << " receiveBytes " << len;
             auto localBusiness = LocalBusiness::instance();
             localBusiness->delConn(_peerAddress);
-            delete this;
         } else {
             _fsm->TriggerAction(recvBuf, len);
         }
@@ -55,7 +54,6 @@ void MyTcpServerHandler::onReadable(ReadableNotification *pNf) {
         LOG(WARNING) << e.displayText();
         auto localBusiness = LocalBusiness::instance();
         localBusiness->delConn(_peerAddress);
-        delete this;
     }
 }
 
@@ -63,7 +61,6 @@ void MyTcpServerHandler::onSocketShutdown(ShutdownNotification *pNf) {
     pNf->release();
     auto localBusiness = LocalBusiness::instance();
     localBusiness->delConn(_peerAddress);
-    delete this;
 }
 
 

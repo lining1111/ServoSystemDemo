@@ -171,19 +171,19 @@ static void * LocalFindClient(const string &peerAddress){
         case LocalBusiness::CT_LOCALTCP:
         case LocalBusiness::CT_REMOTETCP: {
             if (client != nullptr) {
-                ((MyTcpHandler *) client)->timeRecv = getTimestampMs();
+                static_cast<MyTcpHandler *>(client)->timeRecv = getTimestampMs();
             }
         }
             break;
         case LocalBusiness::CT_LOCALWS: {
             if (client != nullptr) {
-                ((MyWebsocketClient *) client)->timeRecv = getTimestampMs();
+                static_cast<MyWebsocketClient *>(client)->timeRecv = getTimestampMs();
             }
         }
             break;
         case LocalBusiness::CT_REMOTEWS: {
             if (client != nullptr) {
-                ((MyWebSocketRequestHandler *) client)->timeRecv = getTimestampMs();
+                static_cast<MyWebSocketRequestHandler *>(client)->timeRecv = getTimestampMs();
             }
         }
             break;

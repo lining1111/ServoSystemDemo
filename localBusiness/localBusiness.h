@@ -9,6 +9,7 @@
 #include <map>
 #include <string>
 #include "Poco/Timer.h"
+#include <memory>
 #include "myTcp/MyTcpClient.h"
 #include "myTcp/MyTcpServer.h"
 #include "myWebsocket/MyWebsocketServer.h"
@@ -21,16 +22,16 @@ public:
     static LocalBusiness *m_pInstance;
 
     bool isRun = false;
-    std::map<string, MyTcpServer *> serverList;
-    std::map<string, MyTcpClient *> clientList;
-    std::map<string, MyWebsocketServer *> wsServerList;
-    std::map<string, MyWebsocketClient *> wsClientList;
+    std::map<string, shared_ptr<MyTcpServer>> serverList;
+    std::map<string, shared_ptr<MyTcpClient>> clientList;
+    std::map<string, shared_ptr<MyWebsocketServer>> wsServerList;
+    std::map<string, shared_ptr<MyWebsocketClient>> wsClientList;
 private:
     mutex mtx;
-    vector<MyTcpServerHandler *> _conns;//接入的客户端数组
+    vector<shared_ptr<MyTcpServerHandler>> _conns;//接入的客户端数组
 
     mutex mtx_ws;
-    vector<MyWebSocketRequestHandler *> _conns_ws;//接入的客户端数组
+    vector<shared_ptr<MyWebSocketRequestHandler>> _conns_ws;//接入的客户端数组
 
 public:
     static LocalBusiness *instance();
@@ -68,9 +69,9 @@ public:
 
     void Stop();
 
-    void addConn(MyTcpServerHandler *p);
+    void addConn(shared_ptr<MyTcpServerHandler> p);
 
-    void addConn_ws(MyWebSocketRequestHandler *p);
+    void addConn_ws(shared_ptr<MyWebSocketRequestHandler> p);
 
     void delConn(const string &peerAddress);
 

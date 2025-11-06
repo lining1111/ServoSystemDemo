@@ -34,7 +34,7 @@ void MyWebSocketRequestHandler::handleRequest(HTTPServerRequest &request, HTTPSe
         LOG(WARNING) << "websocket client connect:" << _ws->peerAddress().toString();
         _peerAddress = _ws->peerAddress().toString();
         auto localBusiness = LocalBusiness::instance();
-        localBusiness->addConn_ws(this);
+        localBusiness->addConn_ws(shared_ptr<MyWebSocketRequestHandler>(this));
         int flags = 0;
         int len = 0;
         do {
