@@ -22,18 +22,15 @@ void handleSignal(int sig) {
 
 //获取接入客户端列表
 void handleSignalUSR1(int sig) {
-    LOG(WARNING)<<"USR1:show local info";
+    LOG(WARNING) << "USR1:show local info";
     auto localBusiness = LocalBusiness::instance();
     if (!localBusiness) {
         LOG(WARNING) << "localBusiness is null";
     } else {
         localBusiness->ShowInfo();
     }
-
 }
 
-
-DEFINE_int32(port, 10001, "本地服务端端口号，默认10001");
 DEFINE_int32(keep, 5, "日志清理周期 单位day，默认5");
 DEFINE_bool(isSendSTDOUT, false, "输出到控制台，默认false");
 DEFINE_string(logDir, "log", "日志的输出目录,默认log");
@@ -60,14 +57,28 @@ int main(int argc, char **argv) {
     device.Init();
 #if defined(__linux__)
     signal(SIGPIPE, SIG_IGN);
-    signal(SIGUSR1,handleSignalUSR1);//USR1 show local info
+    signal(SIGUSR1, handleSignalUSR1); //USR1 show local info
 #endif
-    signal(SIGINT, handleSignal);//Ctrl+C
-    signal(SIGTERM, handleSignal);//kill
+    signal(SIGINT, handleSignal); //Ctrl+C
+    signal(SIGTERM, handleSignal); //kill
 
-    LOG(WARNING) << "开启本地tcp通信";
     auto localBusiness = LocalBusiness::instance();
-    localBusiness->AddServer("server1", FLAGS_port);
+    {
+        auto config = localConfig._config.localServerConfig;
+        if (config.isUse) {
+            LOG(WARNING) << "开启本地tcp server通信";
+            localBusiness->AddServer(config.name, config.port);
+        }
+    }
+
+    {
+        auto config = localConfig._config.remoteSeverConfig;
+        if (config.isUse) {
+            LOG(WARNING) << "开启远程tcp server通信";
+            localBusiness->AddClient(config.name, config.ip, config.port);
+        }
+    }
+
     localBusiness->Run();
 
     while (true) {
@@ -77,23 +88,23 @@ int main(int argc, char **argv) {
         std::this_thread::sleep_for(5s);
 
         auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count();
+            std::chrono::system_clock::now().time_since_epoch()).count();
 
-        if (localConfig._config.isCheckClient) {
-            localBusiness->kickoff(30 * 1000, now_ms);
+        {
+            auto config = localConfig._config.localServerConfig;
+            if (config.isUse) {
+                localBusiness->kickoff(config.timeout, now_ms);
+            }
+
+            device.Keep();
         }
 
-//        uint8_t mesg[12] = {0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x07, 0x00, 0x03, 0x00, 0x00, 0x0A};
-//        ((FPM*) device.g_fpm)->TriggerAction((char *)mesg, 12);
-        device.Keep();
+        localBusiness->Stop();
+        localBusiness->stopAllConns();
+        delete localBusiness;
 
+        device.Exit();
+
+        return 0;
     }
-
-    localBusiness->Stop();
-    localBusiness->stopAllConns();
-    delete localBusiness;
-
-    device.Exit();
-
-    return 0;
 }

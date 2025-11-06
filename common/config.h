@@ -18,11 +18,30 @@ using namespace xpack;
 
 class LocalConfig {
 public:
+    typedef struct LocalServerConfig {
+        bool isUse = false;
+        string name;
+        int port = 8083;
+        bool isCheckClient = false;
+        int timeout = 30*1000;
+        XPACK(O(isUse, name, port, isCheckClient, timeout));
+    } LocalServerConfig;
+
+    typedef struct RemoteServerConfig {
+        bool isUse = false;
+        string name;
+        string ip;
+        int port = 8083;
+        XPACK(O(isUse, name, ip, port));
+    } RemoteServerConfig;
+
     typedef struct Config {
         vector<string> msgType;
-        bool isCheckClient = false;
-    XPACK(O(msgType, isCheckClient));
+        LocalServerConfig localServerConfig;
+        RemoteServerConfig remoteSeverConfig;
+        XPACK(O(msgType, localServerConfig, remoteSeverConfig));
     } Config;
+
 public:
     Config _config;
 
@@ -39,7 +58,7 @@ extern LocalConfig localConfig;
 
 class Device {
 public:
-    string g_user;//the user ip address need to reply
+    string g_user; //the user ip address need to reply
 public:
     Device();
 

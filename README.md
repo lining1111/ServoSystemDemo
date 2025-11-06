@@ -26,3 +26,6 @@
     将websocket加入到架构中，同时加入基于cpp-httplib的httpclient，
     基于cpp-httplib的httpServer可以后续在实际的工程中加入，但是一般cpp的工程不会出现httpServer的模式，
     因为处理的东西太复杂了。一般cpp端都是实现传输层的tcp/udp。而会话层及以上的http、ssh、ftp等，用更高级的语言合适。
+ 0.1.0
+    将tcp和ws的server，还有myBusiness中的指针改为智能指针，更为现代化的内存管理方式
+    将配置相关的从程序启动的参数移动到配置文件中
