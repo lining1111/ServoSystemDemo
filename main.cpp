@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     }
 
     {
-        auto config = localConfig._config.remoteSeverConfig;
+        auto config = localConfig._config.remoteServerConfig;
         if (config.isUse) {
             LOG(WARNING) << "开启远程tcp server通信";
             localBusiness->AddClient(config.name, config.ip, config.port);
@@ -95,16 +95,14 @@ int main(int argc, char **argv) {
             if (config.isUse) {
                 localBusiness->kickoff(config.timeout, now_ms);
             }
-
-            device.Keep();
         }
-
-        localBusiness->Stop();
-        localBusiness->stopAllConns();
-        delete localBusiness;
-
-        device.Exit();
-
-        return 0;
+        device.Keep();
     }
+    localBusiness->Stop();
+    localBusiness->stopAllConns();
+    delete localBusiness;
+
+    device.Exit();
+
+    return 0;
 }

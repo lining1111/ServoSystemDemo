@@ -6,7 +6,7 @@ localServerConfig:
   name: server1
   port: 10001
   isCheckClient: false
-  timeout:  30000
+  timeout: 30000
 remoteServerConfig:
   isUse: false
   name: client1

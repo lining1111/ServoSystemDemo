@@ -9,6 +9,10 @@
 #include "common/config.h"
 
 MyWebSocketRequestHandler::MyWebSocketRequestHandler(size_t bufSize) : _bufSize(bufSize) {
+    timeRecv = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+    timeSend = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
     recvBuf = new char[1024 * 1024];
     mtx = new mutex();
     _fsm = new FSM(_bufSize);

@@ -46,6 +46,10 @@ public:
 
 public:
     MyTcpHandler() {
+        timeRecv = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        timeSend = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
         if (mtx == nullptr) {
             mtx = new std::mutex();
         }
@@ -67,7 +71,6 @@ public:
         isLocalThreadRun = true;
         future_t1 = std::async(std::launch::async, ThreadStateMachine, this);
         future_t2 = std::async(std::launch::async, ThreadProcessPkg, this);
-
     }
 
     void stopBusiness() {
@@ -91,7 +94,6 @@ public:
     }
 
 private:
-
     void Action() {
         char value = 0x00;
         if (_fsm->Read(&value, 1) == 1) {
@@ -115,7 +117,6 @@ private:
                     local->Action();
                 }
             }
-
         }
         LOG(WARNING) << local->_peerAddress << " ThreadStateMachine end";
         return 0;
@@ -125,7 +126,8 @@ private:
     static int ThreadProcessPkg(MyTcpHandler *local) {
         LOG(WARNING) << local->_peerAddress << " ThreadProcessPkg start";
         while (local->_isRun) {
-            Poco::AutoPtr<MsgNotification> pNf = dynamic_cast<MsgNotification *>(local->_pkgs.waitDequeueNotification());
+            Poco::AutoPtr<MsgNotification> pNf = dynamic_cast<MsgNotification *>(local->_pkgs.
+                waitDequeueNotification());
             if (pNf) {
                 string pkg = pNf->message();
                 if (pkg.empty()) {
@@ -167,9 +169,7 @@ private:
         return 0;
     }
 
-
 public:
-
     int SendBase(string pkg) {
         int ret = 0;
         std::unique_lock<std::mutex> lock(*mtx);
@@ -187,8 +187,7 @@ public:
                 LOG(ERROR) << _peerAddress << " send len !=len_send";
                 ret = -2;
             }
-        }
-        catch (Poco::Exception &exc) {
+        } catch (Poco::Exception &exc) {
             LOG(ERROR) << _peerAddress << " send error:" << exc.code() << exc.displayText();
             if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK && exc.code() != POCO_EAGAIN) {
                 ret = -2;
@@ -199,11 +198,11 @@ public:
 
         if (this->timeSend == 0) {
             this->timeRecv = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::system_clock::now().time_since_epoch()).count();
+                std::chrono::system_clock::now().time_since_epoch()).count();
         }
 
         this->timeSend = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count();
+            std::chrono::system_clock::now().time_since_epoch()).count();
 
         return ret;
     }
@@ -222,8 +221,7 @@ public:
                 LOG(ERROR) << _peerAddress << " send len !=len_send";
                 ret = -2;
             }
-        }
-        catch (Poco::Exception &exc) {
+        } catch (Poco::Exception &exc) {
             LOG(ERROR) << _peerAddress << " send error:" << exc.code() << exc.displayText();
             if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK && exc.code() != POCO_EAGAIN) {
                 ret = -2;
@@ -234,15 +232,14 @@ public:
 
         if (this->timeSend == 0) {
             this->timeRecv = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::system_clock::now().time_since_epoch()).count();
+                std::chrono::system_clock::now().time_since_epoch()).count();
         }
 
         this->timeSend = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count();
+            std::chrono::system_clock::now().time_since_epoch()).count();
 
         return ret;
     }
-
 };
 
 

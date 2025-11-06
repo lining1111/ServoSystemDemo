@@ -396,7 +396,7 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
         return;
     }
     Poco::LocalDateTime now;
-    LOG(INFO) << "LocalBusiness::Task_Keep:" << Poco::DateTimeFormatter::format(now, "%Y-%m-%d %H:%M:%S %Z");
+    // LOG(INFO) << "LocalBusiness::Task_Keep:" << Poco::DateTimeFormatter::format(now, "%Y-%m-%d %H:%M:%S %Z");
 
     if (local->isRun) {
         for (auto &iter: local->serverList) {
@@ -404,11 +404,9 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
             if (!s->isListen) {
                 s->ReOpen();
                 if (s->isListen) {
-                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
-                            << " 重启";
+                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port << " 重启";
                 } else {
-                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
-                            << " 重启失败";
+                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port << " 重启失败";
                 }
             }
         }
@@ -419,11 +417,9 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
                 s->ReOpen();
                 if (s->isListen) {
                     s->Run();
-                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
-                            << " 重启";
+                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port << " 重启";
                 } else {
-                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port
-                            << " 重启失败";
+                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port << " 重启失败";
                 }
             }
         }
@@ -433,11 +429,9 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
             if (c->isNeedReconnect) {
                 c->Reconnect();
                 if (!c->isNeedReconnect) {
-                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
-                            << " 重启";
+                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port << " 重启";
                 } else {
-                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
-                            << " 重启失败";
+                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port << " 重启失败";
                 }
             }
         }
@@ -447,11 +441,9 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
             if (c->isNeedReconnect) {
                 c->Reconnect();
                 if (!c->isNeedReconnect) {
-                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
-                            << " 重启";
+                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port << " 重启";
                 } else {
-                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port
-                            << " 重启失败";
+                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port << " 重启失败";
                 }
             }
         }
