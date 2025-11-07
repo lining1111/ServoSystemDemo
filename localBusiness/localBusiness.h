@@ -37,23 +37,8 @@ public:
     static LocalBusiness *instance();
 
     ~LocalBusiness() {
-        StopTimerTaskAll();
-        isRun = false;
-        for (auto iter = clientList.begin(); iter != clientList.end();) {
-//            delete iter->second;
-            iter = clientList.erase(iter);
-        }
-        for (auto iter = serverList.begin(); iter != serverList.end();) {
-//            delete iter->second;
-            iter = serverList.erase(iter);
-        }
-        for (auto iter = wsClientList.begin(); iter != wsClientList.end();) {
-//            delete iter->second;
-            iter = wsClientList.erase(iter);
-        }
-        for (auto iter = wsServerList.begin(); iter != wsServerList.end();) {
-//            delete iter->second;
-            iter = wsServerList.erase(iter);
+        if (isRun) {
+            Stop();
         }
     };
 

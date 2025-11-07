@@ -117,9 +117,9 @@ int main(int argc, char **argv) {
         }
         device.Keep();
     }
-    localBusiness->Stop();
     localBusiness->stopAllConns();
     localBusiness->stopAllConns(false);
+    localBusiness->Stop();
     delete localBusiness;
 
     device.Exit();

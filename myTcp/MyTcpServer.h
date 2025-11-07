@@ -51,7 +51,6 @@ class MyTcpServer {
 public:
     int _port;
     Poco::Net::ServerSocket _s;
-    Poco::Net::SocketReactor _reactor;
     Poco::Thread _t;
     Poco::Net::SocketAcceptor<MyTcpServerHandler> *_acceptor = nullptr;
     bool isListen = false;

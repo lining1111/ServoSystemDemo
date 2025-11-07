@@ -79,24 +79,11 @@ void LocalBusiness::Run() {
 void LocalBusiness::Stop() {
     StopTimerTaskAll();
     isRun = false;
-    for (auto &iter: serverList) {
-        auto s = iter.second;
-        s.reset();
-    }
-    for (auto &iter: clientList) {
-        auto c = iter.second;
-        c.reset();
-    }
 
-    for (const auto &iter: wsClientList) {
-        auto c = iter.second;
-        c.reset();
-    }
-
-    for (const auto &iter: wsServerList) {
-        auto s = iter.second;
-        s.reset();
-    }
+    serverList.clear();
+    clientList.clear();
+    wsClientList.clear();
+    wsServerList.clear();
 }
 
 void LocalBusiness::addConn(shared_ptr<MyTcpServerHandler> p) {
@@ -104,7 +91,7 @@ void LocalBusiness::addConn(shared_ptr<MyTcpServerHandler> p) {
     _conns.push_back(p);
 }
 
-void LocalBusiness::addConn_ws(MyWebSocketRequestHandler* p) {
+void LocalBusiness::addConn_ws(MyWebSocketRequestHandler *p) {
     std::unique_lock<std::mutex> lock(mtx_ws);
     _conns_ws.push_back(p);
 }
@@ -144,8 +131,6 @@ void LocalBusiness::stopAllConns(bool isTcp) {
                 auto c = _conns.at(i);
                 _conns.erase(_conns.begin() + i);
                 LOG(WARNING) << "从数组踢出客户端:" << c->_peerAddress;
-                c->stopBusiness();
-                c.reset();
             }
         }
     } else {
@@ -207,7 +192,7 @@ int LocalBusiness::SendToClient(const string &peerAddress, const string &msg) {
     bool isRemoteClient = false;
     //先看下是不是对端的客户端
     std::unique_lock<std::mutex> lock(mtx);
-    for (const auto& iter: _conns) {
+    for (const auto &iter: _conns) {
         if (iter != nullptr) {
             if (iter->_peerAddress == peerAddress) {
                 ret = iter->SendBase(msg);
@@ -255,7 +240,7 @@ void *LocalBusiness::FindClient(const string &peerAddress, CLIType &clientType) 
     bool isRemoteClient = false;
     //先看下是不是对端的客户端
     std::unique_lock<std::mutex> lock(mtx);
-    for (const auto& iter: _conns) {
+    for (const auto &iter: _conns) {
         if (iter != nullptr) {
             if (iter->_peerAddress == peerAddress) {
                 ret = iter.get();
@@ -359,7 +344,7 @@ void LocalBusiness::ShowInfo() {
                 LOG(WARNING) << "no remote client connect";
             } else {
                 std::unique_lock<std::mutex> lock(mtx);
-                for (const auto& c: _conns) {
+                for (const auto &c: _conns) {
                     LOG(WARNING) << "remote client: " << c->_peerAddress;
                 }
             }

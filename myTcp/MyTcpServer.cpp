@@ -61,6 +61,7 @@ void MyTcpServerHandler::onSocketShutdown(ShutdownNotification *pNf) {
     localBusiness->delConn(_peerAddress);
 }
 
+Poco::Net::SocketReactor _reactor;//由于Server类和接入的客户端类都用到了，所以用作全局变量，防止因客户端和服务端都释放的情况下出现重复释放的SIGSEGV
 
 MyTcpServer::MyTcpServer(int port) : _port(port) {
 }
