@@ -10,7 +10,7 @@
 using namespace common;
 
 MyWebsocketClient::MyWebsocketClient(string serverip, int serverport)
-        : server_ip(serverip), server_port(serverport) {
+    : server_ip(serverip), server_port(serverport) {
     recvBuf = new char[1024 * 1024];
     _cs = new Poco::Net::HTTPClientSession(server_ip, server_port);
     _req = new Poco::Net::HTTPRequest(Poco::Net::HTTPRequest::HTTP_GET, "/ws", Poco::Net::HTTPRequest::HTTP_1_1);
@@ -33,7 +33,7 @@ int MyWebsocketClient::Open() {
         _ws = new Poco::Net::WebSocket(*_cs, *_req, *_rsp);
     } catch (Poco::Exception &e) {
         LOG(ERROR) << "ws client open fail:" << server_ip << ":" << to_string(server_port) << ",err:"
-                   << e.displayText();
+                << e.displayText();
         return -1;
     }
     isNeedReconnect = false;
@@ -47,7 +47,7 @@ int MyWebsocketClient::Reconnect() {
         _ws = new Poco::Net::WebSocket(*_cs, *_req, *_rsp);
     } catch (Poco::Exception &e) {
         LOG(ERROR) << "ws client open fail:" << server_ip << ":" << to_string(server_port) << ",err:"
-                   << e.displayText();
+                << e.displayText();
         return -1;
     }
     isNeedReconnect = false;
@@ -83,8 +83,7 @@ int MyWebsocketClient::SendBase(string pkg) {
             LOG(ERROR) << _peerAddress << " send len !=len_send";
             ret = -2;
         }
-    }
-    catch (Poco::Exception &exc) {
+    } catch (Poco::Exception &exc) {
         LOG(ERROR) << _peerAddress << " send error:" << exc.code() << exc.displayText();
         if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK && exc.code() != POCO_EAGAIN) {
             ret = -2;
@@ -94,11 +93,11 @@ int MyWebsocketClient::SendBase(string pkg) {
     }
     if (this->timeSend == 0) {
         this->timeRecv = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count();
+            std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
     this->timeSend = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).count();
+        std::chrono::system_clock::now().time_since_epoch()).count();
 
     return ret;
 }
@@ -117,8 +116,7 @@ int MyWebsocketClient::Send(char *buf_send, int len_send) {
             LOG(ERROR) << _peerAddress << " send len !=len_send";
             ret = -2;
         }
-    }
-    catch (Poco::Exception &exc) {
+    } catch (Poco::Exception &exc) {
         LOG(ERROR) << _peerAddress << " send error:" << exc.code() << exc.displayText();
         if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK && exc.code() != POCO_EAGAIN) {
             ret = -2;
@@ -129,11 +127,11 @@ int MyWebsocketClient::Send(char *buf_send, int len_send) {
 
     if (this->timeSend == 0) {
         this->timeRecv = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count();
+            std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
     this->timeSend = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).count();
+        std::chrono::system_clock::now().time_since_epoch()).count();
 
     return ret;
 }
@@ -141,17 +139,19 @@ int MyWebsocketClient::Send(char *buf_send, int len_send) {
 int MyWebsocketClient::ThreadRecv(MyWebsocketClient *local) {
     LOG(WARNING) << local->_peerAddress << " ThreadRecv start";
     while (local->_isRun) {
-        memset(local->recvBuf, 0, 1024 * 1024);
-        int recvLen = (local->_fsm->GetWriteLen() < (1024 * 1024)) ? local->_fsm->GetWriteLen() : (1024 * 1024);
-        int flags;
-        int len = local->_ws->receiveFrame(local->recvBuf, recvLen, flags);
-        if (len == 0 && flags == 0) {
-            LOG(ERROR) << local->_peerAddress << " receiveBytes " << len;;
-            local->isNeedReconnect = true;
-        } else {
-            local->_fsm->TriggerAction(local->recvBuf, len);
+        std::this_thread::sleep_for(1s);
+        if (!local->isNeedReconnect) {
+            memset(local->recvBuf, 0, 1024 * 1024);
+            int recvLen = (local->_fsm->GetWriteLen() < (1024 * 1024)) ? local->_fsm->GetWriteLen() : (1024 * 1024);
+            int flags;
+            int len = local->_ws->receiveFrame(local->recvBuf, recvLen, flags);
+            if (len == 0 && flags == 0) {
+                LOG(ERROR) << local->_peerAddress << " receiveBytes " << len;;
+                local->isNeedReconnect = true;
+            } else {
+                local->_fsm->TriggerAction(local->recvBuf, len);
+            }
         }
-
     }
 
     LOG(WARNING) << local->_peerAddress << " ThreadRecv start";
@@ -173,10 +173,9 @@ void MyWebsocketClient::ThreadHeartbeat(MyWebsocketClient *local) {
                     LOG(ERROR) << local->_peerAddress << " send err";
                     local->isNeedReconnect = true;
                 }
-            }
-            catch (Poco::Exception &exc) {
+            } catch (Poco::Exception &exc) {
                 LOG(ERROR) << local->_peerAddress << " send error:" << exc.code()
-                           << exc.displayText();
+                        << exc.displayText();
                 if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK &&
                     exc.code() != POCO_EAGAIN) {
                     local->isNeedReconnect = true;

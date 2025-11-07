@@ -10,7 +10,7 @@ localTcpServerConfig:
 remoteTcpServerConfig:
   isUse: false
   name: client1
-  ip: 192.168.123.100
+  ip: 192.168.127.1
   port: 8083
 localWSServerConfig:
   isUse: false
@@ -21,5 +21,5 @@ localWSServerConfig:
 remoteWSServerConfig:
   isUse: false
   name: ws_client1
-  ip: 192.168.123.100
+  ip: 192.168.127.129
   port: 8083
