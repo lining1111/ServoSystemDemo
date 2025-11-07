@@ -14,7 +14,7 @@ std::string HttpClient::Get(const std::string &path,
 
     httplib::Client cli(m_host, m_port);
     httplib::Headers _headers;
-    for (auto iter: header) {
+    for (const auto& iter: header) {
         _headers.insert(iter);
     }
 
@@ -28,7 +28,7 @@ std::string HttpClient::Post(const std::string &path,
                              const std::map<std::string, std::string> &header, int &state) {
     httplib::Client cli(m_host, m_port);
     httplib::Headers _headers;
-    for (auto iter: header) {
+    for (const auto& iter: header) {
         _headers.insert(iter);
     }
 

@@ -9,10 +9,8 @@
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <mutex>
-#include <iostream>
-#include "fsm/FSM.h"
-#include <future>
+
+#include "common/ComHandler.hpp"
 #include "Poco/Net/NetException.h"
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/Net/HTTPServerResponse.h"
@@ -30,61 +28,31 @@ using namespace Poco::Net;
 using namespace std;
 
 //websocket request handler
-class MyWebSocketRequestHandler : public HTTPRequestHandler {
+class MyWebSocketRequestHandler : public HTTPRequestHandler, public common::CommonHandler {
 private:
-    size_t _bufSize;
-    WebSocket *_ws;
-    std::mutex *mtx = nullptr;
-    FSM *_fsm = nullptr;
-    Poco::NotificationQueue _pkgs;
-    string _pkgCache;
+    WebSocket *_ws = nullptr;
     char *recvBuf = nullptr;
-    bool _isRun = false;
-    bool isLocalThreadRun = false;
-    shared_future<int> future_t1;
-    shared_future<int> future_t2;
+
 public:
-    string _peerAddress;
-    uint64_t timeRecv = 0;
-    uint64_t timeSend = 0;
+    MyWebSocketRequestHandler();
 
-    MyWebSocketRequestHandler(size_t bufSize = 1024 * 1024 * 4);
-
-    ~MyWebSocketRequestHandler();
+    ~MyWebSocketRequestHandler() override;
 
 
-    virtual void handleRequest(HTTPServerRequest &request, HTTPServerResponse &response);
+    void handleRequest(HTTPServerRequest &request, HTTPServerResponse &response) final;
 
-    int SendBase(string pkg);
+    int SendBase(string pkg) final;
 
-    int Send(char *buf_send, int len_send);
-
-private:
-    void startBusiness();
-
-    void stopBusiness();
-
-    void Action();
-
-    //获取包
-    static int ThreadStateMachine(MyWebSocketRequestHandler *local);
-
-    //处理包
-    static int ThreadProcessPkg(MyWebSocketRequestHandler *local);
+    int Send(char *buf_send, int len_send) final;
 };
 
 class MyWebsocketHandler : public HTTPRequestHandlerFactory {
 public:
-    MyWebsocketHandler(std::size_t bufSize = 1024 * 1024 * 4) : _bufSize(bufSize) {
+    MyWebsocketHandler() = default;
 
+    HTTPRequestHandler *createRequestHandler(const HTTPServerRequest &request) final {
+        return new MyWebSocketRequestHandler();
     }
-
-    HTTPRequestHandler *createRequestHandler(const HTTPServerRequest &request) {
-        return new MyWebSocketRequestHandler(_bufSize);
-    }
-
-private:
-    std::size_t _bufSize;
 };
 
 class MyWebsocketServer {
@@ -92,6 +60,7 @@ public:
     int _port;
     bool isListen = false;
     Poco::Net::HTTPServer *srv = nullptr;
+
     MyWebsocketServer(int port);
 
     ~MyWebsocketServer();
@@ -100,9 +69,9 @@ public:
 
     int ReOpen();
 
-    int Run();
+    int Run() const;
 
-    int Stop();
+    int Stop() const;
 };
 
 

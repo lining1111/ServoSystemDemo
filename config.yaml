@@ -1,14 +1,25 @@
 msgType:
   - COM
   - HC
-localServerConfig:
+localTcpServerConfig:
   isUse: true
   name: server1
   port: 10001
   isCheckClient: false
   timeout: 30000
-remoteServerConfig:
+remoteTcpServerConfig:
   isUse: false
   name: client1
+  ip: 192.168.123.100
+  port: 8083
+localWSServerConfig:
+  isUse: false
+  name: ws_server1
+  port: 10001
+  isCheckClient: false
+  timeout: 30000
+remoteWSServerConfig:
+  isUse: false
+  name: ws_client1
   ip: 192.168.123.100
   port: 8083

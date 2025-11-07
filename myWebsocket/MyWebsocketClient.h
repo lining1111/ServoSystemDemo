@@ -20,6 +20,7 @@
 #include <Poco/Net/HTTPResponse.h>
 
 #include "fsm/FSM.h"
+#include "common/ComHandler.hpp"
 
 using namespace std;
 
@@ -28,31 +29,21 @@ using Poco::Net::HTTPClientSession;
 using Poco::Net::HTTPRequest;
 using Poco::Net::HTTPResponse;
 
-class MyWebsocketClient {
+class MyWebsocketClient : public common::CommonHandler {
 private:
-    HTTPClientSession *_cs;
-    HTTPRequest *_req;
-    HTTPResponse *_rsp;
-    WebSocket *_ws;
-    std::mutex *mtx = nullptr;
-    int BUFFER_SIZE = 1024 * 1024 * 4;
-    FSM *_fsm = nullptr;
-    Poco::NotificationQueue _pkgs;
-    string _pkgCache;
+    HTTPClientSession *_cs = nullptr;
+    HTTPRequest *_req = nullptr;
+    HTTPResponse *_rsp = nullptr;
+    WebSocket *_ws = nullptr;
     char *recvBuf = nullptr;
-    bool _isRun = false;
-    bool isLocalThreadRun = false;
-    shared_future<int> future_t1;
-    shared_future<int> future_t2;
+
 public:
     string server_ip;
     int server_port;
-    string _peerAddress;
     bool isNeedReconnect = true;
     std::thread _tRecv;
     std::thread _tHeartbeat;
-    uint64_t timeSend = 0;
-    uint64_t timeRecv = 0;
+
 public:
     MyWebsocketClient(string serverip, int serverport);
 
@@ -64,25 +55,14 @@ public:
 
     int Run();
 
-    int SendBase(string pkg);
+    int SendBase(string pkg) final;
 
-    int Send(char *buf_send, int len_send);
+    int Send(char *buf_send, int len_send) final;
 
 private:
-    void startBusiness();
-
-    void stopBusiness();
-
-    void Action();
-
     static int ThreadRecv(MyWebsocketClient *local);
 
-    static int ThreadStateMachine(MyWebsocketClient *local);
-
-    static int ThreadProcessPkg(MyWebsocketClient *local);
-
     static void ThreadHeartbeat(MyWebsocketClient *local);
-
 };
 
 

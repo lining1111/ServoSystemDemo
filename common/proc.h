@@ -29,9 +29,12 @@ public:
 
 };
 
-typedef int (*Handle)(const string &h, const string &content);
+namespace common {
+    typedef int (*Handle)(const string &h, const string &content);
 
-extern map<string, Handle> HandleRouter;
+    extern map<string, Handle> HandleRouter;
+}
+
 
 
 #endif //PROC_H

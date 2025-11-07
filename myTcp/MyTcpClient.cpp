@@ -3,11 +3,10 @@
 //
 #include "MyTcpClient.h"
 
-MyTcpClient::MyTcpClient(string serverip, int serverport) :
-        server_ip(serverip), server_port(serverport) {
+MyTcpClient::MyTcpClient(string serverip, int serverport) : server_ip(serverip), server_port(serverport) {
     recvBuf = new char[1024 * 1024];
-//    _reactor.addEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
-//                                                                                  &MyTcpClient::onReadable));
+    //    _reactor.addEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
+    //                                                                                  &MyTcpClient::onReadable));
     startBusiness();
 }
 
@@ -16,8 +15,8 @@ MyTcpClient::~MyTcpClient() {
 
     try {
         _reactor.removeEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
-                                                                                         &MyTcpClient::onReadable));
-    } catch (Poco::Exception e) {
+                                        &MyTcpClient::onReadable));
+    } catch (Poco::Exception &e) {
         LOG(ERROR) << e.displayText();
     }
 
@@ -33,16 +32,13 @@ int MyTcpClient::Open() {
     } catch (ConnectionRefusedException &) {
         LOG(ERROR) << server_ip << ":" << server_port << " connect refuse";
         return -1;
-    }
-    catch (TimeoutException &) {
+    } catch (TimeoutException &) {
         LOG(ERROR) << server_ip << ":" << server_port << " connect time out";
         return -1;
-    }
-    catch (NetException &) {
+    } catch (NetException &) {
         LOG(ERROR) << server_ip << ":" << server_port << " net exception";
         return -1;
-    }
-    catch (Poco::Exception &e) {
+    } catch (Poco::Exception &e) {
         LOG(ERROR) << server_ip << ":" << server_port << " exception:" << e.displayText();
         return -1;
     }
@@ -56,7 +52,7 @@ int MyTcpClient::Open() {
 
     try {
         _reactor.addEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
-                                                                                      &MyTcpClient::onReadable));
+                                     &MyTcpClient::onReadable));
     } catch (Poco::Exception &e) {
         LOG(ERROR) << e.displayText();
     }
@@ -76,16 +72,13 @@ int MyTcpClient::Reconnect() {
     } catch (ConnectionRefusedException &) {
         LOG(ERROR) << server_ip << ":" << server_port << " connect refuse";
         return -1;
-    }
-    catch (TimeoutException &) {
+    } catch (TimeoutException &) {
         LOG(ERROR) << server_ip << ":" << server_port << " connect time out";
         return -1;
-    }
-    catch (NetException &) {
+    } catch (NetException &) {
         LOG(ERROR) << server_ip << ":" << server_port << " net exception";
         return -1;
-    }
-    catch (Poco::Exception &e) {
+    } catch (Poco::Exception &e) {
         LOG(ERROR) << server_ip << ":" << server_port << " exception:" << e.displayText();
         return -1;
     }
@@ -99,8 +92,8 @@ int MyTcpClient::Reconnect() {
 
     try {
         _reactor.addEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
-                                                                                      &MyTcpClient::onReadable));
-    } catch (Poco::Exception e) {
+                                     &MyTcpClient::onReadable));
+    } catch (Poco::Exception &e) {
         LOG(ERROR) << e.displayText();
     }
 
@@ -135,13 +128,12 @@ void MyTcpClient::onReadable(ReadableNotification *pNf) {
         if (len <= 0) {
             LOG(ERROR) << _peerAddress << " receiveBytes " << len;
             isNeedReconnect = true;
-
         } else {
             _fsm->TriggerAction(recvBuf, len);
         }
     } catch (Poco::Exception &e) {
         LOG(ERROR) << _peerAddress << " receive error:" << e.code() << ","
-                   << e.displayText();
+                << e.displayText();
         if (e.code() != POCO_ETIMEDOUT && e.code() != POCO_EWOULDBLOCK &&
             e.code() != POCO_EAGAIN) {
             isNeedReconnect = true;
@@ -165,12 +157,11 @@ void MyTcpClient::ThreadHeartbeat(MyTcpClient *local) {
                     LOG(ERROR) << local->_peerAddress << " send err";
                     local->isNeedReconnect = true;
                 }
-            }
-            catch (Poco::Exception &exc) {
-                LOG(ERROR) << local->_peerAddress << " send error:" << exc.code()
-                           << exc.displayText();
-                if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK &&
-                    exc.code() != POCO_EAGAIN) {
+            } catch (Poco::Exception &e) {
+                LOG(ERROR) << local->_peerAddress << " send error:" << e.code()
+                        << e.displayText();
+                if (e.code() != POCO_ETIMEDOUT && e.code() != POCO_EWOULDBLOCK &&
+                    e.code() != POCO_EAGAIN) {
                     local->isNeedReconnect = true;
                 }
             }

@@ -19,7 +19,6 @@ using namespace std;
 using namespace xpack;
 
 namespace common {
-
 #define ARRAY_SIZE(x) \
     (sizeof(x)/sizeof(x[0]))
 #define OFFSET(type, member)      \
@@ -30,9 +29,10 @@ namespace common {
 
     class MsgNotification : public Poco::Notification {
     public:
-        MsgNotification(const string msg) : _msg(msg) {}
+        explicit MsgNotification(const string msg) : _msg(msg) {
+        }
 
-        const string message() const { return _msg; }
+        string message() const { return _msg; }
 
     private:
         string _msg;
@@ -51,7 +51,7 @@ namespace common {
         string code;
         int state = 0;
         string param;
-    XPACK(O(comVersion, guid, timestamp, code, state, param));
+        XPACK(O(comVersion, guid, timestamp, code, state, param));
 
         Com() {
             guid = getGuid();
@@ -59,7 +59,7 @@ namespace common {
         }
     };
 
-    
+
     string parseCode(const string &pkg);
 
     string parseGUID(const string &pkg);
@@ -71,20 +71,18 @@ namespace common {
      * Note types are used to send prompt information during interactions involving registration and verification.
      */
     enum State {
-        State_NoClient = -1000,//no client connected
-        State_ParamErr = -102,//get param error
-        State_NotFindCmd = -101,//not find cmd
-        State_UnmarshalFail = -100,//unmarshal fail
-        State_CmdExeNoRsp = 100,//in this case, the command is executed successfully, but the reply frame is not returned
-        State_Success = 0,//success
-        State_Null = -1,//module info is null,not init
-        State_Unconnect = -2,//unconnect
-        State_SendErr = -3,//send error
-        State_LongTimeNoRecv = -4,//long time no recv
-
+        State_NoClient = -1000, //no client connected
+        State_ParamErr = -102, //get param error
+        State_NotFindCmd = -101, //not find cmd
+        State_UnmarshalFail = -100, //unmarshal fail
+        State_CmdExeNoRsp = 100,
+        //in this case, the command is executed successfully, but the reply frame is not returned
+        State_Success = 0, //success
+        State_Null = -1, //module info is null,not init
+        State_Unconnect = -2, //unconnect
+        State_SendErr = -3, //send error
+        State_LongTimeNoRecv = -4, //long time no recv
     };
-
-
 }
 
 

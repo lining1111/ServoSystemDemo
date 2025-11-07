@@ -4,8 +4,7 @@
 #include "MyTcpServer.h"
 #include "localBusiness/localBusiness.h"
 
-MyTcpServerHandler::MyTcpServerHandler(StreamSocket &socket, SocketReactor &reactor) :
-        _reactor(reactor) {
+MyTcpServerHandler::MyTcpServerHandler(StreamSocket &socket, SocketReactor &reactor) : _reactor(reactor) {
     _socket = socket;
     _socket.setLinger(true, 0);
     _peerAddress = socket.peerAddress().toString();
@@ -13,9 +12,9 @@ MyTcpServerHandler::MyTcpServerHandler(StreamSocket &socket, SocketReactor &reac
     auto localBusiness = LocalBusiness::instance();
     localBusiness->addConn(shared_ptr<MyTcpServerHandler>(this));
     _reactor.addEventHandler(_socket, Observer<MyTcpServerHandler, ShutdownNotification>(*this,
-                                                                                         &MyTcpServerHandler::onSocketShutdown));
+                                 &MyTcpServerHandler::onSocketShutdown));
     _reactor.addEventHandler(_socket, Observer<MyTcpServerHandler, ReadableNotification>(*this,
-                                                                                         &MyTcpServerHandler::onReadable));
+                                 &MyTcpServerHandler::onReadable));
     recvBuf = new char[1024 * 1024];
     startBusiness();
 }
@@ -24,10 +23,10 @@ MyTcpServerHandler::~MyTcpServerHandler() {
     LOG(WARNING) << _peerAddress << " disconnected";
     stopBusiness();
     _reactor.removeEventHandler(_socket, Observer<MyTcpServerHandler, ShutdownNotification>(*this,
-                                                                                            &MyTcpServerHandler::onSocketShutdown));
+                                    &MyTcpServerHandler::onSocketShutdown));
     _reactor.removeEventHandler(_socket, Observer<MyTcpServerHandler, ReadableNotification>(*this,
-                                                                                            &MyTcpServerHandler::onReadable));
-//    _socket.close();
+                                    &MyTcpServerHandler::onReadable));
+    //    _socket.close();
     delete[] recvBuf;
 }
 
@@ -49,8 +48,7 @@ void MyTcpServerHandler::onReadable(ReadableNotification *pNf) {
         } else {
             _fsm->TriggerAction(recvBuf, len);
         }
-    }
-    catch (Poco::Exception &e) {
+    } catch (Poco::Exception &e) {
         LOG(WARNING) << e.displayText();
         auto localBusiness = LocalBusiness::instance();
         localBusiness->delConn(_peerAddress);
@@ -65,7 +63,6 @@ void MyTcpServerHandler::onSocketShutdown(ShutdownNotification *pNf) {
 
 
 MyTcpServer::MyTcpServer(int port) : _port(port) {
-
 }
 
 MyTcpServer::~MyTcpServer() {
@@ -102,9 +99,8 @@ int MyTcpServer::ReOpen() {
         isListen = false;
         return -1;
     }
-    if (_acceptor != nullptr) {
-        delete _acceptor;
-    }
+    delete _acceptor;
+
     _s.setReusePort(true);
     _s.setLinger(true, 0);
     _s.setKeepAlive(true);

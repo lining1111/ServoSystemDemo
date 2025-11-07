@@ -31,7 +31,7 @@ private:
     vector<shared_ptr<MyTcpServerHandler>> _conns;//接入的客户端数组
 
     mutex mtx_ws;
-    vector<shared_ptr<MyWebSocketRequestHandler>> _conns_ws;//接入的客户端数组
+    vector<MyWebSocketRequestHandler *> _conns_ws;//接入的客户端数组,由于Poco的WS client部分采用了智能指针，这里就不要使用智能指针了，容易出现重复释放引起的SIGSEGV
 
 public:
     static LocalBusiness *instance();
@@ -57,13 +57,9 @@ public:
         }
     };
 
-    void AddServer(const string &name, int port);
+    void AddServer(const string &name, int port, bool isTcp = true);
 
-    void AddServer_ws(const string &name, int port);
-
-    void AddClient(const string &name, const string &cloudIp, int cloudPort);
-
-    void AddClient_ws(const string &name, const string &cloudIp, int cloudPort);
+    void AddClient(const string &name, const string &cloudIp, int cloudPort, bool isTcp = true);
 
     void Run();
 
@@ -71,15 +67,11 @@ public:
 
     void addConn(shared_ptr<MyTcpServerHandler> p);
 
-    void addConn_ws(shared_ptr<MyWebSocketRequestHandler> p);
+    void addConn_ws(MyWebSocketRequestHandler* p);
 
-    void delConn(const string &peerAddress);
+    void delConn(const string &peerAddress, bool isTcp = true);
 
-    void delConn_ws(const string &peerAddress);
-
-    void stopAllConns();
-
-    void stopAllConns_ws();
+    void stopAllConns(bool isTcp = true);
 
     void Broadcast(const string &msg);
 
@@ -102,7 +94,7 @@ public:
 
     void *FindClient(const string &peerAddress, CLIType &clientType);
 
-    void kickoff(uint64_t timeout, uint64_t now);
+    void kickoff(uint64_t timeout, uint64_t now, CLIType clientType = CT_LOCALTCP);
 
 
 public:

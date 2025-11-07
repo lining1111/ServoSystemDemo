@@ -14,7 +14,7 @@ class _RecvNotification : public Poco::Notification {
 public:
     _RecvNotification(const bool isRecv) : _isRecv(isRecv) {}
 
-    const bool isRecv() const { return _isRecv; }
+    bool isRecv() const { return _isRecv; }
 
 private:
     bool _isRecv;
@@ -37,7 +37,7 @@ private:
 public:
     uint64_t _needLen = 1;//Cache required data length
 public:
-    FSM(size_t capacity);
+    explicit FSM(size_t capacity);
 
     ~FSM();
 

@@ -10,7 +10,7 @@
 #include "glogHelper/GlogHelper.h"
 #include "utils/utils.h"
 #include "version.h"
-#include "common/config.h"
+#include "config/config.h"
 #include "localBusiness/localBusiness.h"
 
 bool isExit = false;
@@ -63,19 +63,34 @@ int main(int argc, char **argv) {
     signal(SIGTERM, handleSignal); //kill
 
     auto localBusiness = LocalBusiness::instance();
+    //Tcp
     {
-        auto config = localConfig._config.localServerConfig;
+        auto config = localConfig._config.localTcpServerConfig;
         if (config.isUse) {
             LOG(WARNING) << "开启本地tcp server通信";
             localBusiness->AddServer(config.name, config.port);
         }
     }
-
     {
-        auto config = localConfig._config.remoteServerConfig;
+        auto config = localConfig._config.remoteTcpServerConfig;
         if (config.isUse) {
             LOG(WARNING) << "开启远程tcp server通信";
             localBusiness->AddClient(config.name, config.ip, config.port);
+        }
+    }
+    //WS
+    {
+        auto config = localConfig._config.localWSServerConfig;
+        if (config.isUse) {
+            LOG(WARNING) << "开启本地ws server通信";
+            localBusiness->AddServer(config.name, config.port, false);
+        }
+    }
+    {
+        auto config = localConfig._config.remoteWSServerConfig;
+        if (config.isUse) {
+            LOG(WARNING) << "开启远程ws server通信";
+            localBusiness->AddClient(config.name, config.ip, config.port, false);
         }
     }
 
@@ -91,15 +106,20 @@ int main(int argc, char **argv) {
             std::chrono::system_clock::now().time_since_epoch()).count();
 
         {
-            auto config = localConfig._config.localServerConfig;
-            if (config.isUse) {
-                localBusiness->kickoff(config.timeout, now_ms);
+            auto config = localConfig._config.localTcpServerConfig;
+            if (config.isUse && config.isCheckClient) {
+                localBusiness->kickoff(config.timeout, now_ms, LocalBusiness::CT_REMOTETCP);
+            }
+            auto config_ws = localConfig._config.localWSServerConfig;
+            if (config.isUse && config.isCheckClient) {
+                localBusiness->kickoff(config.timeout, now_ms, LocalBusiness::CT_REMOTEWS);
             }
         }
         device.Keep();
     }
     localBusiness->Stop();
     localBusiness->stopAllConns();
+    localBusiness->stopAllConns(false);
     delete localBusiness;
 
     device.Exit();

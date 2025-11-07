@@ -8,7 +8,7 @@
 
 #include "proc.h"
 #include "common.h"
-#include "config.h"
+#include "../config/config.h"
 #include "localBusiness/localBusiness.h"
 #include <glog/logging.h>
 #include <fmt/core.h>
@@ -17,7 +17,6 @@
 #include <bitset>
 #include <utility>
 
-using namespace common;
 
 void CacheTimestamp::update(int index, uint64_t timestamp, int caches) {
     std::unique_lock<std::mutex> lock(mtx);
@@ -38,7 +37,7 @@ void CacheTimestamp::update(int index, uint64_t timestamp, int caches) {
                 } else {
                     if (timestamp <= dataTimestamps.back()) {
                         LOG(ERROR) << "当前插入时间戳 " << timestamp << " 小于已插入的最新时间戳 "
-                                   << dataTimestamps.back() << "，将恢复到最初状态";
+                                << dataTimestamps.back() << "，将恢复到最初状态";
                         dataTimestamps.clear();
                         dataIndex = -1;
                     } else {
@@ -62,148 +61,151 @@ void CacheTimestamp::update(int index, uint64_t timestamp, int caches) {
                 sum += iter;
             }
             this->interval = sum / intervals.size();
-//            printf("帧率的差和为%d\n", sum);
-//            printf("计算的帧率为%d\n", this->interval);
+            //            printf("帧率的差和为%d\n", sum);
+            //            printf("计算的帧率为%d\n", this->interval);
             this->isSetInterval = true;
         }
     }
 }
 
+namespace common {
+    /*
+     * Base class for business processing interfaces
+     */
+    template<class Req, class Rsp>
+    class Handler {
+    public:
+        Req *req = nullptr;
+        Rsp *rsp = nullptr;
+        string _handler;
+        string _content;
+        string err;
 
-/*
- * Base class for business processing interfaces
- */
-template<class Req, class Rsp>
-class Handler {
-public:
-    Req *req = nullptr;
-    Rsp *rsp = nullptr;
-    string _handler;
-    string _content;
-    string err;
-public:
+    public:
+        Handler() = default;
 
-    void init(string h, string c) {
-        _handler = std::move(h);
-        _content = std::move(c);
-        if (req != nullptr) {
-            delete req;
-        }
-        req = new Req();
-        if (rsp != nullptr) {
-            delete rsp;
-        }
-        rsp = new Rsp();
-    }
+        virtual ~Handler() = default;
 
-    //pre-processing, parse request
-    int dec() {
-        int ret = 0;
-        try {
-            json::decode(_content, *req);
-        } catch (std::exception &e) {
-            err = e.what();
-            LOG(ERROR) << "json decode err:" << err;
-            ret = -1;
-        }
-        return ret;
-    }
-
-    //pre-processing fail, actual business
-    void decErr() {
-        rsp->state = State_UnmarshalFail;
-        rsp->param = "json decode err:" + err;
-    }
-
-    //pre-processing success, actual business
-    virtual void proc() = 0;
-
-    //post-processing, return result
-    void enc() {
-        if (rsp != nullptr && rsp->state != State_CmdExeNoRsp) {
-            rsp->guid = req->guid;
-            //Code starting with Req, Req start with Rsp
-            if (req->code.find("Req") == 0) {
-                rsp->code = "Rsp" + req->code.substr(3);
-            } else {
-                rsp->code = req->code;
+        void init(string h, string c) {
+            _handler = std::move(h);
+            _content = std::move(c);
+            if (req != nullptr) {
+                delete req;
             }
+            req = new Req();
+            if (rsp != nullptr) {
+                delete rsp;
+            }
+            rsp = new Rsp();
+        }
 
-            string pkg = json::encode(*rsp);
-            auto localBusiness = LocalBusiness::instance();
-            if (localBusiness->SendToClient(_handler, pkg) != 0) {
-                VLOG(3) << _handler << " send failed:" << pkg;
-            } else {
-                VLOG(3) << _handler << " send success:" << pkg;
+        //pre-processing, parse request
+        int dec() {
+            int ret = 0;
+            try {
+                json::decode(_content, *req);
+            } catch (std::exception &e) {
+                err = e.what();
+                LOG(ERROR) << "json decode err:" << err;
+                ret = -1;
+            }
+            return ret;
+        }
+
+        //pre-processing fail, actual business
+        void decErr() {
+            rsp->state = State_UnmarshalFail;
+            rsp->param = "json decode err:" + err;
+        }
+
+        //pre-processing success, actual business
+        virtual void proc() = 0;
+
+        //post-processing, return result
+        void enc() {
+            if (rsp != nullptr && rsp->state != State_CmdExeNoRsp) {
+                rsp->guid = req->guid;
+                //Code starting with Req, Req start with Rsp
+                if (req->code.find("Req") == 0) {
+                    rsp->code = "Rsp" + req->code.substr(3);
+                } else {
+                    rsp->code = req->code;
+                }
+
+                string pkg = json::encode(*rsp);
+                auto localBusiness = LocalBusiness::instance();
+                if (localBusiness->SendToClient(_handler, pkg) != 0) {
+                    VLOG(3) << _handler << " send failed:" << pkg;
+                } else {
+                    VLOG(3) << _handler << " send success:" << pkg;
+                }
             }
         }
-    }
 
-public:
-    int exe(string h, string c) {
-        init(h, c);
-        if (dec() != 0) {
-            decErr();
-            enc();
-            return -1;
-        } else {
-            proc();
-            enc();
-            return 0;
+    public:
+        int exe(string h, string c) {
+            init(std::move(h), std::move(c));
+            if (dec() != 0) {
+                decErr();
+                enc();
+                return -1;
+            } else {
+                proc();
+                enc();
+                return 0;
+            }
         }
-
-    }
-};
+    };
 
 #define Handle(xxx) \
 int Handle##xxx(const string &h, const string &content) { \
     Handler##xxx handler;                   \
     return handler.exe(h, content);          \
-}                                           \
-
-
-static void * LocalFindClient(const string &peerAddress){
-    auto localBusiness = LocalBusiness::instance();
-    LocalBusiness::CLIType clientType;
-    auto client = localBusiness->FindClient(peerAddress, clientType);
-
-    switch (clientType) {
-        case LocalBusiness::CT_LOCALTCP:
-        case LocalBusiness::CT_REMOTETCP: {
-            if (client != nullptr) {
-                static_cast<MyTcpHandler *>(client)->timeRecv = getTimestampMs();
-            }
-        }
-            break;
-        case LocalBusiness::CT_LOCALWS: {
-            if (client != nullptr) {
-                static_cast<MyWebsocketClient *>(client)->timeRecv = getTimestampMs();
-            }
-        }
-            break;
-        case LocalBusiness::CT_REMOTEWS: {
-            if (client != nullptr) {
-                static_cast<MyWebSocketRequestHandler *>(client)->timeRecv = getTimestampMs();
-            }
-        }
-            break;
-    }
-    return client;
 }
 
-class HandlerHeartbeat : public Handler<Com, Com> {
-public:
-    void proc() final {
-        auto client = LocalFindClient(_handler);
-        rsp->guid = req->guid;
-        rsp->param = "rsp";
+    static void *LocalFindClient(const string &peerAddress) {
+        auto localBusiness = LocalBusiness::instance();
+        LocalBusiness::CLIType clientType;
+        auto client = localBusiness->FindClient(peerAddress, clientType);
+
+        switch (clientType) {
+            case LocalBusiness::CT_LOCALTCP:
+            case LocalBusiness::CT_REMOTETCP: {
+                if (client != nullptr) {
+                    static_cast<MyTcpHandler *>(client)->timeRecv = getTimestampMs();
+                }
+            }
+            break;
+            case LocalBusiness::CT_LOCALWS: {
+                if (client != nullptr) {
+                    static_cast<MyWebsocketClient *>(client)->timeRecv = getTimestampMs();
+                }
+            }
+            break;
+            case LocalBusiness::CT_REMOTEWS: {
+                if (client != nullptr) {
+                    static_cast<MyWebSocketRequestHandler *>(client)->timeRecv = getTimestampMs();
+                }
+            }
+            break;
+        }
+        return client;
     }
-};
 
-Handle(Heartbeat)
+    class HandlerHeartbeat : public Handler<Com, Com> {
+    public:
+        void proc() final {
+            auto client = LocalFindClient(_handler);
+            rsp->guid = req->guid;
+            rsp->param = "rsp";
+        }
+    };
+
+    Handle(Heartbeat)
 
 
-map<string, Handle> HandleRouter = {
+    map<string, Handle> HandleRouter = {
         make_pair("Heartbeat", HandleHeartbeat),
 
-};
+    };
+}

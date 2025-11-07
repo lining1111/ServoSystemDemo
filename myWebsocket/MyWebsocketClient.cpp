@@ -4,7 +4,7 @@
 
 #include "MyWebsocketClient.h"
 #include "common/common.h"
-#include "common/config.h"
+#include "../config/config.h"
 #include "common/proc.h"
 
 using namespace common;
@@ -12,31 +12,20 @@ using namespace common;
 MyWebsocketClient::MyWebsocketClient(string serverip, int serverport)
         : server_ip(serverip), server_port(serverport) {
     recvBuf = new char[1024 * 1024];
-    if (mtx == nullptr) {
-        mtx = new std::mutex();
-    }
-    _fsm = new FSM(BUFFER_SIZE);
     _cs = new Poco::Net::HTTPClientSession(server_ip, server_port);
     _req = new Poco::Net::HTTPRequest(Poco::Net::HTTPRequest::HTTP_GET, "/ws", Poco::Net::HTTPRequest::HTTP_1_1);
     _rsp = new Poco::Net::HTTPResponse;
-
     startBusiness();
 }
 
 MyWebsocketClient::~MyWebsocketClient() {
     LOG(WARNING) << _peerAddress << " disconnected";
     stopBusiness();
-    delete mtx;
     delete _cs;
     delete _req;
     delete _rsp;
     delete _ws;
     delete[]recvBuf;
-    if (_fsm != nullptr) {
-        delete _fsm;
-        _fsm = nullptr;
-    }
-
 }
 
 int MyWebsocketClient::Open() {
@@ -149,47 +138,6 @@ int MyWebsocketClient::Send(char *buf_send, int len_send) {
     return ret;
 }
 
-void MyWebsocketClient::startBusiness() {
-    _isRun = true;
-    LOG(WARNING) << _peerAddress << " start business";
-    isLocalThreadRun = true;
-    future_t1 = std::async(std::launch::async, ThreadStateMachine, this);
-    future_t2 = std::async(std::launch::async, ThreadProcessPkg, this);
-}
-
-void MyWebsocketClient::stopBusiness() {
-    _isRun = false;
-    if (isLocalThreadRun) {
-        isLocalThreadRun = false;
-        _fsm->Stop();
-        _pkgs.wakeUpAll();
-        try {
-            future_t1.wait();
-        } catch (exception &e) {
-            LOG(ERROR) << e.what();
-        }
-        try {
-            future_t2.wait();
-        } catch (exception &e) {
-            LOG(ERROR) << e.what();
-        }
-    }
-    LOG(WARNING) << _peerAddress << " stop business";
-}
-
-void MyWebsocketClient::Action() {
-    char value = 0x00;
-    if (_fsm->Read(&value, 1) == 1) {
-        if (value == '*') {
-            //得到分包尾部
-            _pkgs.enqueueNotification(Poco::AutoPtr<MsgNotification>(new MsgNotification(_pkgCache)));
-            _pkgCache.clear();
-        } else {
-            _pkgCache.push_back(value);
-        }
-    }
-}
-
 int MyWebsocketClient::ThreadRecv(MyWebsocketClient *local) {
     LOG(WARNING) << local->_peerAddress << " ThreadRecv start";
     while (local->_isRun) {
@@ -207,67 +155,6 @@ int MyWebsocketClient::ThreadRecv(MyWebsocketClient *local) {
     }
 
     LOG(WARNING) << local->_peerAddress << " ThreadRecv start";
-    return 0;
-}
-
-int MyWebsocketClient::ThreadStateMachine(MyWebsocketClient *local) {
-    LOG(WARNING) << local->_peerAddress << " ThreadStateMachine start";
-    local->_pkgCache.clear();
-    while (local->_isRun) {
-        if (local->_fsm->WaitTriggerAction()) {
-            while (local->_fsm->ShouldAction()) {
-                local->Action();
-            }
-        }
-
-    }
-    LOG(WARNING) << local->_peerAddress << " ThreadStateMachine end";
-    return 0;
-}
-
-int MyWebsocketClient::ThreadProcessPkg(MyWebsocketClient *local) {
-    LOG(WARNING) << local->_peerAddress << " ThreadProcessPkg start";
-    while (local->_isRun) {
-        Poco::AutoPtr<MsgNotification> pNf = dynamic_cast<MsgNotification *>(local->_pkgs.waitDequeueNotification());
-        if (pNf) {
-            string pkg = pNf->message();
-            if (pkg.empty()) {
-                continue;
-            }
-            auto guid = common::parseGUID(pkg);
-            if (guid.empty()) {
-                guid = getGuid();
-            }
-
-            auto code = common::parseCode(pkg);
-            if (!code.empty()) {
-                auto iter = HandleRouter.find(code);
-                if (iter != HandleRouter.end()) {
-                    LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "local process:" << pkg;
-                    iter->second(local->_peerAddress, pkg);
-                } else {
-                    //最后没有对应的方法名
-                    LOG(ERROR) << local->_peerAddress << " 最后没有对应的方法名:" << code << ",内容:" << pkg;
-                    Com rsp;
-                    rsp.guid = guid;
-                    rsp.code = code;
-                    rsp.state = State_UnmarshalFail;
-                    rsp.param = "code not find:" + code;
-                    string rspStr = json::encode(rsp);
-                    local->SendBase(rspStr);
-                }
-            } else {
-                Com rsp;
-                rsp.guid = guid;
-                rsp.code = "";
-                rsp.state = State_UnmarshalFail;
-                rsp.param = "code empty";
-                string rspStr = json::encode(rsp);
-                local->SendBase(rspStr);
-            }
-        }
-    }
-    LOG(WARNING) << local->_peerAddress << " ThreadProcessPkg end";
     return 0;
 }
 

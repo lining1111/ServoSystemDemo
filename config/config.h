@@ -37,9 +37,13 @@ public:
 
     typedef struct Config {
         vector<string> msgType;
-        LocalServerConfig localServerConfig;
-        RemoteServerConfig remoteServerConfig;
-        XPACK(O(msgType, localServerConfig, remoteServerConfig));
+        //TCP
+        LocalServerConfig localTcpServerConfig;
+        RemoteServerConfig remoteTcpServerConfig;
+        //WS
+        LocalServerConfig localWSServerConfig;
+        RemoteServerConfig remoteWSServerConfig;
+        XPACK(O(msgType, localTcpServerConfig, remoteTcpServerConfig, localWSServerConfig, remoteWSServerConfig));
     } Config;
 
 public:
