@@ -129,7 +129,8 @@ namespace common {
 
                     auto code = common::parseCode(pkg);
                     if (!code.empty()) {
-                        auto iter = HandleRouter.find(code);
+                        auto keys = common::split_path(code);
+                        auto iter = HandleRouter.find(keys);
                         if (iter != HandleRouter.end()) {
                             LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "local process:" << pkg;
                             iter->second(local->_peerAddress, pkg);

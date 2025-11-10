@@ -8,7 +8,7 @@
 
 #include "proc.h"
 #include "common.h"
-#include "../config/config.h"
+#include "config/config.h"
 #include "localBusiness/localBusiness.h"
 #include <glog/logging.h>
 #include <fmt/core.h>
@@ -68,7 +68,15 @@ void CacheTimestamp::update(int index, uint64_t timestamp, int caches) {
     }
 }
 
+#include <Poco/StringTokenizer.h>
+
 namespace common {
+
+    std::vector<std::string> split_path(const std::string& path) {
+        Poco::StringTokenizer tokenizer(path, "/", Poco::StringTokenizer::TOK_IGNORE_EMPTY);
+        return std::vector<std::string>(tokenizer.begin(), tokenizer.end());
+    }
+
     /*
      * Base class for business processing interfaces
      */
@@ -204,8 +212,8 @@ int Handle##xxx(const string &h, const string &content) { \
     Handle(Heartbeat)
 
 
-    map<string, Handle> HandleRouter = {
-        make_pair("Heartbeat", HandleHeartbeat),
+    map<vector<string>, Handle> HandleRouter = {
+        {{"Heartbeat"}, HandleHeartbeat},
 
     };
 }

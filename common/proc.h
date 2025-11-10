@@ -15,7 +15,6 @@ using namespace common;
 
 class CacheTimestamp {
 private:
-
     std::vector<uint64_t> dataTimestamps;
     int dataIndex = -1;
 
@@ -24,17 +23,19 @@ public:
     uint64_t interval = 0;
     bool isSetInterval = false;
     bool isStartTask = false;
+
 public:
     void update(int index, uint64_t timestamp, int caches = 10);
-
 };
 
+
 namespace common {
+    std::vector<std::string> split_path(const std::string &path);
+
     typedef int (*Handle)(const string &h, const string &content);
 
-    extern map<string, Handle> HandleRouter;
+    extern map<vector<string>, Handle> HandleRouter;
 }
-
 
 
 #endif //PROC_H
