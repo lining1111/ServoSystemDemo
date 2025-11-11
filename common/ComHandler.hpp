@@ -122,12 +122,13 @@ namespace common {
                     if (pkg.empty()) {
                         continue;
                     }
-                    auto guid = common::parseGUID(pkg);
+                    string guid, code, param;
+                    tie(guid, code, param) = parseCom(pkg);
+
                     if (guid.empty()) {
                         guid = getGuid();
                     }
 
-                    auto code = common::parseCode(pkg);
                     if (!code.empty()) {
                         auto keys = common::split_path(code);
                         auto iter = HandleRouter.find(keys);

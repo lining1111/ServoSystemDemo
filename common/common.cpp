@@ -7,34 +7,19 @@
 #include "utils/utils.h"
 
 namespace common {
-
     string GetComVersion() {
         return ComVersion;
     }
 
-    string parseCode(const string &pkg) {
+    tuple<string, string, string> parseCom(const string &pkg) {
         Com data;
-        data.code.clear();
         try {
             json::decode(pkg, data);
         } catch (std::exception &e) {
             LOG(ERROR) << e.what();
-            return "";
+            return tie("", "", "");
         }
-        return data.code;
+        return tie(data.guid, data.code, data.param);
     }
-
-    string parseGUID(const string &pkg) {
-        Com data;
-        data.guid.clear();
-        try {
-            json::decode(pkg, data);
-        } catch (std::exception &e) {
-            LOG(ERROR) << e.what();
-            return "";
-        }
-        return data.guid;
-    }
-
 
 }

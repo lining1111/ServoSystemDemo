@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <tuple>
 #include <glog/logging.h>
 #include "utils/utils.h"
 #include <Poco/NotificationQueue.h>
@@ -59,10 +60,7 @@ namespace common {
         }
     };
 
-
-    string parseCode(const string &pkg);
-
-    string parseGUID(const string &pkg);
+    tuple<string, string, string> parseCom(const string &pkg);
 
     /*
      * Reply frame data state enumeration
