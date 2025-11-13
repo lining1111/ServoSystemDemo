@@ -80,19 +80,18 @@ namespace common {
     /*
      * Base class for business processing interfaces
      */
-    template<class Req, class Rsp>
-    class Handler {
+    class HandlerCom {
     public:
-        Req *req = nullptr;
-        Rsp *rsp = nullptr;
+        Com *req = nullptr;
+        Com *rsp = nullptr;
         string _handler;
         string _content;
         string err;
 
     public:
-        Handler() = default;
+        HandlerCom() = default;
 
-        virtual ~Handler() = default;
+        virtual ~HandlerCom() = default;
 
         void init(string h, string c) {
             _handler = std::move(h);
@@ -100,11 +99,11 @@ namespace common {
             if (req != nullptr) {
                 delete req;
             }
-            req = new Req();
+            req = new Com();
             if (rsp != nullptr) {
                 delete rsp;
             }
-            rsp = new Rsp();
+            rsp = new Com();
         }
 
         //pre-processing, parse request
@@ -200,7 +199,7 @@ int Handle##xxx(const string &h, const string &content) { \
         return client;
     }
 
-    class HandlerHeartbeat : public Handler<Com, Com> {
+    class HandlerHeartbeat : public HandlerCom {
     public:
         void proc() final {
             auto client = LocalFindClient(_handler);
