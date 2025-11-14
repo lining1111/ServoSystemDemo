@@ -17,6 +17,9 @@
 #include "Poco/Net/NetException.h"
 #include "Poco/Observer.h"
 #include <glog/logging.h>
+#include <Poco/Net/TCPServer.h>
+#include <Poco/Net/TCPServerConnection.h>
+#include <Poco/Net/TCPServerConnectionFactory.h>
 
 using Poco::Net::SocketReactor;
 using Poco::Net::SocketConnector;
@@ -32,28 +35,35 @@ using Poco::Net::ShutdownNotification;
 using Poco::Observer;
 using Poco::Net::NetException;
 
-class MyTcpServerHandler : public MyTcpHandler{
+class MyTcpServerHandler : public Poco::Net::TCPServerConnection, public MyTcpHandler {
 public:
-    SocketReactor &_reactor;
     char *recvBuf = nullptr;
+
 public:
-    MyTcpServerHandler(StreamSocket &socket, SocketReactor &reactor);
+    MyTcpServerHandler(const StreamSocket &socket);
 
-    ~MyTcpServerHandler();
+    ~MyTcpServerHandler() override;
 
-    void onReadable(ReadableNotification *pNf);
-
-    void onSocketShutdown(ShutdownNotification *pNf);
-
+    void run();
 };
+
+
+class MyTcpConnectionFactory : public Poco::Net::TCPServerConnectionFactory {
+public:
+    MyTcpConnectionFactory() = default;
+
+    Poco::Net::TCPServerConnection *createConnection(const StreamSocket &socket) {
+        return new MyTcpServerHandler(socket);
+    }
+};
+
 
 class MyTcpServer {
 public:
     int _port;
-    Poco::Net::ServerSocket _s;
-    Poco::Thread _t;
-    Poco::Net::SocketAcceptor<MyTcpServerHandler> *_acceptor = nullptr;
     bool isListen = false;
+    Poco::Net::TCPServer *srv = nullptr;
+
 public:
     MyTcpServer(int port);
 
@@ -65,6 +75,7 @@ public:
 
     int Run();
 
+    int Stop();
 };
 
 

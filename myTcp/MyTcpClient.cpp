@@ -14,7 +14,7 @@ MyTcpClient::~MyTcpClient() {
     LOG(WARNING) << _peerAddress << " disconnected";
 
     try {
-        _reactor.removeEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
+        _reactor.removeEventHandler(__socket, Observer<MyTcpClient, ReadableNotification>(*this,
                                         &MyTcpClient::onReadable));
     } catch (Poco::Exception &e) {
         LOG(ERROR) << e.displayText();
@@ -28,7 +28,7 @@ int MyTcpClient::Open() {
     SocketAddress sa(server_ip, server_port);
     try {
         Poco::Timespan ts(1000 * 1000);
-        _socket.connect(sa, ts);
+        __socket.connect(sa, ts);
     } catch (ConnectionRefusedException &) {
         LOG(ERROR) << server_ip << ":" << server_port << " connect refuse";
         return -1;
@@ -43,15 +43,15 @@ int MyTcpClient::Open() {
         return -1;
     }
 
-    _peerAddress = _socket.peerAddress().toString();
+    _peerAddress = __socket.peerAddress().toString();
     LOG(WARNING) << "connection to " << _peerAddress << " success";
     Poco::Timespan ts1(1000 * 100);
-    _socket.setSendTimeout(ts1);
-    _socket.setKeepAlive(true);
-    _socket.setLinger(true, 0);
+    __socket.setSendTimeout(ts1);
+    __socket.setKeepAlive(true);
+    __socket.setLinger(true, 0);
 
     try {
-        _reactor.addEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
+        _reactor.addEventHandler(__socket, Observer<MyTcpClient, ReadableNotification>(*this,
                                      &MyTcpClient::onReadable));
     } catch (Poco::Exception &e) {
         LOG(ERROR) << e.displayText();
@@ -64,11 +64,11 @@ int MyTcpClient::Open() {
 }
 
 int MyTcpClient::Reconnect() {
-    _socket.close();
+    __socket.close();
     SocketAddress sa(server_ip, server_port);
     try {
         Poco::Timespan ts(1000 * 1000);
-        _socket.connect(sa, ts);
+        __socket.connect(sa, ts);
     } catch (ConnectionRefusedException &) {
         LOG(ERROR) << server_ip << ":" << server_port << " connect refuse";
         return -1;
@@ -83,15 +83,15 @@ int MyTcpClient::Reconnect() {
         return -1;
     }
 
-    _peerAddress = _socket.peerAddress().toString();
+    _peerAddress = __socket.peerAddress().toString();
     LOG(WARNING) << "reconnection to " << _peerAddress << " success";
     Poco::Timespan ts1(1000 * 100);
-    _socket.setSendTimeout(ts1);
-    _socket.setKeepAlive(true);
-    _socket.setLinger(true, 0);
+    __socket.setSendTimeout(ts1);
+    __socket.setKeepAlive(true);
+    __socket.setLinger(true, 0);
 
     try {
-        _reactor.addEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
+        _reactor.addEventHandler(__socket, Observer<MyTcpClient, ReadableNotification>(*this,
                                      &MyTcpClient::onReadable));
     } catch (Poco::Exception &e) {
         LOG(ERROR) << e.displayText();
@@ -124,7 +124,7 @@ void MyTcpClient::onReadable(ReadableNotification *pNf) {
     memset(recvBuf, 0, 1024 * 1024);
     int recvLen = (_fsm->GetWriteLen() < (1024 * 1024)) ? _fsm->GetWriteLen() : (1024 * 1024);
     try {
-        int len = _socket.receiveBytes(recvBuf, recvLen);
+        int len = __socket.receiveBytes(recvBuf, recvLen);
         if (len <= 0) {
             LOG(ERROR) << _peerAddress << " receiveBytes " << len;
             isNeedReconnect = true;

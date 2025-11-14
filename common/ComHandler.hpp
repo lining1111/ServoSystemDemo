@@ -68,16 +68,6 @@ namespace common {
                 isLocalThreadRun = false;
                 _fsm->Stop();
                 _pkgs.wakeUpAll();
-                try {
-                    future_t1.wait();
-                } catch (exception &e) {
-                    LOG(ERROR) << e.what();
-                }
-                try {
-                    future_t2.wait();
-                } catch (exception &e) {
-                    LOG(ERROR) << e.what();
-                }
             }
             LOG(WARNING) << _peerAddress << " stop business";
         }
@@ -119,6 +109,7 @@ namespace common {
                     waitDequeueNotification());
                 if (pNf) {
                     string pkg = pNf->message();
+                    pNf->release();
                     if (pkg.empty()) {
                         continue;
                     }

@@ -86,7 +86,7 @@ void LocalBusiness::Stop() {
     wsServerList.clear();
 }
 
-void LocalBusiness::addConn(shared_ptr<MyTcpServerHandler> p) {
+void LocalBusiness::addConn(MyTcpServerHandler *p) {
     std::unique_lock<std::mutex> lock(mtx);
     _conns.push_back(p);
 }
@@ -243,7 +243,7 @@ void *LocalBusiness::FindClient(const string &peerAddress, CLIType &clientType) 
     for (const auto &iter: _conns) {
         if (iter != nullptr) {
             if (iter->_peerAddress == peerAddress) {
-                ret = iter.get();
+                ret = iter;
                 clientType = CT_REMOTETCP;
                 isRemoteClient = true;
             }
@@ -339,7 +339,7 @@ void LocalBusiness::ShowInfo() {
         LOG(WARNING) << "no local server start";
     } else {
         for (const auto &s: serverList) {
-            LOG(WARNING) << "local server: " << s.first << "---" << s.second->_s.address().toString();
+            LOG(WARNING) << "local server: " << s.first << "---" << "---127.0.0.1:" << s.second->_port;
             if (_conns.empty()) {
                 LOG(WARNING) << "no remote client connect";
             } else {

@@ -14,7 +14,7 @@ using Poco::Net::StreamSocket;
 
 class MyTcpHandler : public common::CommonHandler {
 public:
-    StreamSocket _socket;
+    StreamSocket __socket;
 
 public:
     MyTcpHandler() = default;
@@ -30,7 +30,7 @@ public:
         }
         LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << pkg;
         try {
-            auto len = _socket.sendBytes(pkg.data(), pkg.length());
+            auto len = __socket.sendBytes(pkg.data(), pkg.length());
             VLOG(2) << _peerAddress << " send len:" << len << " len_send:" << to_string(pkg.length());
             if (len < 0) {
                 LOG(ERROR) << _peerAddress << " send len < 0";
@@ -64,7 +64,7 @@ public:
         std::unique_lock<std::mutex> lock(*mtx);
         LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << string(buf_send);
         try {
-            auto len = _socket.sendBytes(buf_send, len_send);
+            auto len = __socket.sendBytes(buf_send, len_send);
             VLOG(2) << _peerAddress << " send len:" << len << " len_send:" << len_send;
             if (len < 0) {
                 LOG(ERROR) << _peerAddress << " send len < 0";
