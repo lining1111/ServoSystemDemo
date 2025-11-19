@@ -170,41 +170,13 @@ int Handle##xxx(const string &h, const string &content) { \
     return handler.exe(h, content);          \
 }
 
-    static void *LocalFindClient(const string &peerAddress) {
-        auto localBusiness = LocalBusiness::instance();
-        LocalBusiness::CLIType clientType;
-        auto client = localBusiness->FindClient(peerAddress, clientType);
-
-        switch (clientType) {
-            case LocalBusiness::CT_LOCALTCP:
-            case LocalBusiness::CT_REMOTETCP: {
-                if (client != nullptr) {
-                    static_cast<MyTcpHandler *>(client)->timeRecv = getTimestampMs();
-                }
-            }
-            break;
-            case LocalBusiness::CT_LOCALWS: {
-                if (client != nullptr) {
-                    static_cast<MyWebsocketClient *>(client)->timeRecv = getTimestampMs();
-                }
-            }
-            break;
-            case LocalBusiness::CT_REMOTEWS: {
-                if (client != nullptr) {
-                    static_cast<MyWebSocketRequestHandler *>(client)->timeRecv = getTimestampMs();
-                }
-            }
-            break;
-        }
-        return client;
-    }
 
     class HandlerHeartbeat : public HandlerCom {
     public:
         void proc() final {
-            auto client = LocalFindClient(_handler);
             rsp->guid = req->guid;
             rsp->param = "rsp";
+
         }
     };
 
