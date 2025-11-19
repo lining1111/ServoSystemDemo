@@ -7,7 +7,8 @@ yaml-cpp/0.8.0
 mini/0.9.16
 indicators/2.3
 libcurl/8.2.1
-openssl/3.1.2
+#openssl/3.1.2
+openssl/1.1.1p
 [options]
 poco*:enable_data_mysql=False
 glog*:with_unwind=False
