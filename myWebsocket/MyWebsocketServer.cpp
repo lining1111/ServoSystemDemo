@@ -5,7 +5,7 @@
 #include "MyWebsocketServer.h"
 #include "localBusiness/localBusiness.h"
 
-MyWebSocketRequestHandler::MyWebSocketRequestHandler() {
+MyWebSocketRequestHandler::MyWebSocketRequestHandler():CommonHandler("ws_client") {
     recvBuf = new char[1024 * 1024];
     startBusiness();
 }
@@ -20,7 +20,7 @@ void MyWebSocketRequestHandler::handleRequest(HTTPServerRequest &request, HTTPSe
     try {
         _ws = new WebSocket(request, response);
         LOG(WARNING) << "websocket client connect:" << _ws->peerAddress().toString();
-        _peerAddress = _ws->peerAddress().toString();
+        _name = _ws->peerAddress().toString();
         auto localBusiness = LocalBusiness::instance();
         localBusiness->addConn_ws(this);
         int flags = 0;
@@ -65,16 +65,16 @@ int MyWebSocketRequestHandler::SendBase(string pkg) {
     LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << pkg;
     try {
         auto len = _ws->sendFrame(pkg.data(), pkg.length());
-        VLOG(2) << _peerAddress << " send len:" << len << " len_send:" << to_string(pkg.length());
+        VLOG(2) << _name << " send len:" << len << " len_send:" << to_string(pkg.length());
         if (len < 0) {
-            LOG(ERROR) << _peerAddress << " send len < 0";
+            LOG(ERROR) << _name << " send len < 0";
             ret = -2;
         } else if (len != pkg.size()) {
-            LOG(ERROR) << _peerAddress << " send len !=len_send";
+            LOG(ERROR) << _name << " send len !=len_send";
             ret = -2;
         }
     } catch (Poco::Exception &exc) {
-        LOG(ERROR) << _peerAddress << " send error:" << exc.code() << exc.displayText();
+        LOG(ERROR) << _name << " send error:" << exc.code() << exc.displayText();
         if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK && exc.code() != POCO_EAGAIN) {
             ret = -2;
         } else {
@@ -98,16 +98,16 @@ int MyWebSocketRequestHandler::Send(char *buf_send, int len_send) {
     LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << string(buf_send);
     try {
         auto len = _ws->sendFrame(buf_send, len_send);
-        VLOG(2) << _peerAddress << " send len:" << len << " len_send:" << len_send;
+        VLOG(2) << _name << " send len:" << len << " len_send:" << len_send;
         if (len < 0) {
-            LOG(ERROR) << _peerAddress << " send len < 0";
+            LOG(ERROR) << _name << " send len < 0";
             ret = -2;
         } else if (len != len_send) {
-            LOG(ERROR) << _peerAddress << " send len !=len_send";
+            LOG(ERROR) << _name << " send len !=len_send";
             ret = -2;
         }
     } catch (Poco::Exception &exc) {
-        LOG(ERROR) << _peerAddress << " send error:" << exc.code() << exc.displayText();
+        LOG(ERROR) << _name << " send error:" << exc.code() << exc.displayText();
         if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK && exc.code() != POCO_EAGAIN) {
             ret = -2;
         } else {

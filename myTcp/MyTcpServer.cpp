@@ -6,14 +6,14 @@
 
 MyTcpServerHandler::MyTcpServerHandler(const StreamSocket &socket) : TCPServerConnection(socket) {
     __socket = socket;
-    _peerAddress = socket.peerAddress().toString();
-    LOG(WARNING) << "connection from " << _peerAddress;
+    _name = socket.peerAddress().toString();
+    LOG(WARNING) << "connection from " << _name;
     recvBuf = new char[1024 * 1024];
     startBusiness();
 }
 
 MyTcpServerHandler::~MyTcpServerHandler() {
-    LOG(WARNING) << _peerAddress << " disconnected";
+    LOG(WARNING) << _name << " disconnected";
     stopBusiness();
     __socket.close();
     delete[] recvBuf;
@@ -34,7 +34,7 @@ void MyTcpServerHandler::run() {
     } catch (Poco::Exception &e) {
         LOG(WARNING) << e.displayText();
     }
-    localBusiness->delConn(_peerAddress);
+    localBusiness->delConn(_name);
     //!!!Here, do not delete this because Poco will enter the destructor.
 }
 

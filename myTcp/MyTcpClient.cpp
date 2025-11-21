@@ -3,7 +3,8 @@
 //
 #include "MyTcpClient.h"
 
-MyTcpClient::MyTcpClient(string serverip, int serverport) : server_ip(serverip), server_port(serverport) {
+MyTcpClient::MyTcpClient(string serverip, int serverport) : server_ip(serverip),
+                                                            server_port(serverport) {
     recvBuf = new char[1024 * 1024];
     //    _reactor.addEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
     //                                                                                  &MyTcpClient::onReadable));
@@ -11,7 +12,7 @@ MyTcpClient::MyTcpClient(string serverip, int serverport) : server_ip(serverip),
 }
 
 MyTcpClient::~MyTcpClient() {
-    LOG(WARNING) << _peerAddress << " disconnected";
+    LOG(WARNING) << _name << " disconnected";
 
     try {
         _reactor.removeEventHandler(__socket, Observer<MyTcpClient, ReadableNotification>(*this,
@@ -43,8 +44,8 @@ int MyTcpClient::Open() {
         return -1;
     }
 
-    _peerAddress = __socket.peerAddress().toString();
-    LOG(WARNING) << "connection to " << _peerAddress << " success";
+    _name = __socket.peerAddress().toString();
+    LOG(WARNING) << "connection to " << _name << " success";
     Poco::Timespan ts1(1000 * 100);
     __socket.setSendTimeout(ts1);
     __socket.setKeepAlive(true);
@@ -83,8 +84,8 @@ int MyTcpClient::Reconnect() {
         return -1;
     }
 
-    _peerAddress = __socket.peerAddress().toString();
-    LOG(WARNING) << "reconnection to " << _peerAddress << " success";
+    _name = __socket.peerAddress().toString();
+    LOG(WARNING) << "reconnection to " << _name << " success";
     Poco::Timespan ts1(1000 * 100);
     __socket.setSendTimeout(ts1);
     __socket.setKeepAlive(true);
@@ -114,7 +115,7 @@ int MyTcpClient::Run() {
 void MyTcpClient::onReadable(ReadableNotification *pNf) {
     pNf->release();
     if (_fsm == nullptr) {
-        LOG(ERROR) << _peerAddress << " _fsm null";
+        LOG(ERROR) << _name << " _fsm null";
         return;
     }
     if (isNeedReconnect) {
@@ -126,13 +127,13 @@ void MyTcpClient::onReadable(ReadableNotification *pNf) {
     try {
         int len = __socket.receiveBytes(recvBuf, recvLen);
         if (len <= 0) {
-            LOG(ERROR) << _peerAddress << " receiveBytes " << len;
+            LOG(ERROR) << _name << " receiveBytes " << len;
             isNeedReconnect = true;
         } else {
             _fsm->TriggerAction(recvBuf, len);
         }
     } catch (Poco::Exception &e) {
-        LOG(ERROR) << _peerAddress << " receive error:" << e.code() << ","
+        LOG(ERROR) << _name << " receive error:" << e.code() << ","
                 << e.displayText();
         if (e.code() != POCO_ETIMEDOUT && e.code() != POCO_EWOULDBLOCK &&
             e.code() != POCO_EAGAIN) {
@@ -143,7 +144,7 @@ void MyTcpClient::onReadable(ReadableNotification *pNf) {
 
 
 void MyTcpClient::ThreadHeartbeat(MyTcpClient *local) {
-    LOG(WARNING) << local->_peerAddress << " heartbeat thread start";
+    LOG(WARNING) << local->_name << " heartbeat thread start";
     while (local->_isRun) {
         std::this_thread::sleep_for(5s);
         if (!local->isNeedReconnect) {
@@ -154,11 +155,11 @@ void MyTcpClient::ThreadHeartbeat(MyTcpClient *local) {
                 string msg = json::encode(req);
                 int ret = local->SendBase(msg);
                 if (ret < 0) {
-                    LOG(ERROR) << local->_peerAddress << " send err";
+                    LOG(ERROR) << local->_name << " send err";
                     local->isNeedReconnect = true;
                 }
             } catch (Poco::Exception &e) {
-                LOG(ERROR) << local->_peerAddress << " send error:" << e.code()
+                LOG(ERROR) << local->_name << " send error:" << e.code()
                         << e.displayText();
                 if (e.code() != POCO_ETIMEDOUT && e.code() != POCO_EWOULDBLOCK &&
                     e.code() != POCO_EAGAIN) {
@@ -167,5 +168,5 @@ void MyTcpClient::ThreadHeartbeat(MyTcpClient *local) {
             }
         }
     }
-    LOG(WARNING) << local->_peerAddress << " heartbeat thread end";
+    LOG(WARNING) << local->_name << " heartbeat thread end";
 }

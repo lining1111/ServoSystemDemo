@@ -18,8 +18,6 @@
 #include "Poco/Net/HTTPClientSession.h"
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPResponse.h>
-
-#include "fsm/FSM.h"
 #include "common/ComHandler.hpp"
 
 using namespace std;

@@ -102,7 +102,7 @@ void LocalBusiness::delConn(const string &peerAddress, bool isTcp) {
         for (int i = 0; i < _conns.size(); i++) {
             if (_conns.at(i) != nullptr) {
                 auto c = _conns.at(i);
-                if (c->_peerAddress == peerAddress) {
+                if (c->_name == peerAddress) {
                     _conns.erase(_conns.begin() + i);
                     LOG(WARNING) << "从数组踢出客户端:" << peerAddress;
                 }
@@ -113,7 +113,7 @@ void LocalBusiness::delConn(const string &peerAddress, bool isTcp) {
         for (int i = 0; i < _conns_ws.size(); i++) {
             if (_conns_ws.at(i) != nullptr) {
                 auto c = _conns_ws.at(i);
-                if (c->_peerAddress == peerAddress) {
+                if (c->_name == peerAddress) {
                     _conns_ws.erase(_conns_ws.begin() + i);
                     LOG(WARNING) << "从ws数组踢出客户端:" << peerAddress;
                 }
@@ -130,7 +130,7 @@ void LocalBusiness::stopAllConns(bool isTcp) {
             if (_conns.at(i) != nullptr) {
                 auto c = _conns.at(i);
                 _conns.erase(_conns.begin() + i);
-                LOG(WARNING) << "从数组踢出客户端:" << c->_peerAddress;
+                LOG(WARNING) << "从数组踢出客户端:" << c->_name;
             }
         }
     } else {
@@ -139,7 +139,7 @@ void LocalBusiness::stopAllConns(bool isTcp) {
             if (_conns_ws.at(i) != nullptr) {
                 auto c = _conns_ws.at(i);
                 _conns_ws.erase(_conns_ws.begin() + i);
-                LOG(WARNING) << "从ws数组踢出客户端:" << c->_peerAddress;
+                LOG(WARNING) << "从ws数组踢出客户端:" << c->_name;
             }
         }
     }
@@ -194,7 +194,7 @@ int LocalBusiness::SendToClient(const string &peerAddress, const string &msg) {
     std::unique_lock<std::mutex> lock(mtx);
     for (const auto &iter: _conns) {
         if (iter != nullptr) {
-            if (iter->_peerAddress == peerAddress) {
+            if (iter->_name == peerAddress) {
                 ret = iter->SendBase(msg);
                 isRemoteClient = true;
             }
@@ -204,7 +204,7 @@ int LocalBusiness::SendToClient(const string &peerAddress, const string &msg) {
     std::unique_lock<std::mutex> lock_ws(mtx_ws);
     for (auto iter: _conns_ws) {
         if (iter != nullptr) {
-            if (iter->_peerAddress == peerAddress) {
+            if (iter->_name == peerAddress) {
                 ret = iter->SendBase(msg);
                 isRemoteClient = true;
             }
@@ -216,7 +216,7 @@ int LocalBusiness::SendToClient(const string &peerAddress, const string &msg) {
         if (!clientList.empty()) {
             for (const auto &iter: clientList) {
                 auto c = iter.second;
-                if (c->_peerAddress == peerAddress && !c->isNeedReconnect) {
+                if (c->_name == peerAddress && !c->isNeedReconnect) {
                     ret = c->SendBase(msg);
                 }
             }
@@ -225,7 +225,7 @@ int LocalBusiness::SendToClient(const string &peerAddress, const string &msg) {
         if (!wsClientList.empty()) {
             for (const auto &iter: wsClientList) {
                 auto c = iter.second;
-                if (c->_peerAddress == peerAddress && !c->isNeedReconnect) {
+                if (c->_name == peerAddress && !c->isNeedReconnect) {
                     ret = c->SendBase(msg);
                 }
             }
@@ -242,7 +242,7 @@ void *LocalBusiness::FindClient(const string &peerAddress, CLIType &clientType) 
     std::unique_lock<std::mutex> lock(mtx);
     for (const auto &iter: _conns) {
         if (iter != nullptr) {
-            if (iter->_peerAddress == peerAddress) {
+            if (iter->_name == peerAddress) {
                 ret = iter;
                 clientType = CT_REMOTETCP;
                 isRemoteClient = true;
@@ -253,7 +253,7 @@ void *LocalBusiness::FindClient(const string &peerAddress, CLIType &clientType) 
     std::unique_lock<std::mutex> lock_ws(mtx_ws);
     for (auto iter: _conns_ws) {
         if (iter != nullptr) {
-            if (iter->_peerAddress == peerAddress) {
+            if (iter->_name == peerAddress) {
                 ret = iter;
                 clientType = CT_REMOTEWS;
                 isRemoteClient = true;
@@ -266,7 +266,7 @@ void *LocalBusiness::FindClient(const string &peerAddress, CLIType &clientType) 
         if (!clientList.empty()) {
             for (const auto &iter: clientList) {
                 auto c = iter.second;
-                if (c->_peerAddress == peerAddress) {
+                if (c->_name == peerAddress) {
                     ret = iter.second.get();
                     clientType = CT_LOCALTCP;
                 }
@@ -275,7 +275,7 @@ void *LocalBusiness::FindClient(const string &peerAddress, CLIType &clientType) 
         if (!wsClientList.empty()) {
             for (const auto &iter: wsClientList) {
                 auto c = iter.second;
-                if (c->_peerAddress == peerAddress) {
+                if (c->_name == peerAddress) {
                     ret = iter.second.get();
                     clientType = CT_LOCALWS;
                 }
@@ -296,7 +296,7 @@ void LocalBusiness::kickoff(uint64_t timeout, uint64_t now, CLIType clientType) 
                 auto conn = _conns.at(i);
                 if (conn != nullptr) {
                     if (abs((long long) now - (long long) conn->timeRecv) > timeout) {
-                        LOG(WARNING) << "接收超时,主动断开客户端:" << conn->_peerAddress;
+                        LOG(WARNING) << "接收超时,主动断开客户端:" << conn->_name;
                         _conns.erase(_conns.begin() + i);
                     }
                 }
@@ -311,7 +311,7 @@ void LocalBusiness::kickoff(uint64_t timeout, uint64_t now, CLIType clientType) 
                 auto conn = _conns_ws.at(i);
                 if (conn != nullptr) {
                     if (abs((long long) now - (long long) conn->timeRecv) > timeout) {
-                        LOG(WARNING) << "接收超时,主动断开客户端:" << conn->_peerAddress;
+                        LOG(WARNING) << "接收超时,主动断开客户端:" << conn->_name;
                         _conns_ws.erase(_conns_ws.begin() + i);
                     }
                 }
@@ -345,7 +345,7 @@ void LocalBusiness::ShowInfo() {
             } else {
                 std::unique_lock<std::mutex> lock(mtx);
                 for (const auto &c: _conns) {
-                    LOG(WARNING) << "remote client: " << c->_peerAddress;
+                    LOG(WARNING) << "remote client: " << c->_name;
                 }
             }
         }
@@ -353,7 +353,7 @@ void LocalBusiness::ShowInfo() {
             LOG(WARNING) << "no local client start";
         } else {
             for (const auto &c: clientList) {
-                LOG(WARNING) << "local client: " << c.first << "---" << c.second->_peerAddress;
+                LOG(WARNING) << "local client: " << c.first << "---" << c.second->_name;
             }
         }
 
@@ -369,7 +369,7 @@ void LocalBusiness::ShowInfo() {
                 } else {
                     std::unique_lock<std::mutex> lock(mtx_ws);
                     for (auto c: _conns_ws) {
-                        LOG(WARNING) << "remote client: " << c->_peerAddress;
+                        LOG(WARNING) << "remote client: " << c->_name;
                     }
                 }
             }
@@ -378,7 +378,7 @@ void LocalBusiness::ShowInfo() {
             LOG(WARNING) << "no local ws client start";
         } else {
             for (const auto &c: wsClientList) {
-                LOG(WARNING) << "local ws client: " << c.first << "---" << c.second->_peerAddress;
+                LOG(WARNING) << "local ws client: " << c.first << "---" << c.second->_name;
             }
         }
     }

@@ -10,7 +10,7 @@
 using namespace common;
 
 MyWebsocketClient::MyWebsocketClient(string serverip, int serverport)
-    : server_ip(serverip), server_port(serverport) {
+    : CommonHandler("ws_client"), server_ip(serverip), server_port(serverport) {
     recvBuf = new char[1024 * 1024];
     _cs = new Poco::Net::HTTPClientSession(server_ip, server_port);
     _req = new Poco::Net::HTTPRequest(Poco::Net::HTTPRequest::HTTP_GET, "/ws", Poco::Net::HTTPRequest::HTTP_1_1);
@@ -19,7 +19,7 @@ MyWebsocketClient::MyWebsocketClient(string serverip, int serverport)
 }
 
 MyWebsocketClient::~MyWebsocketClient() {
-    LOG(WARNING) << _peerAddress << " disconnected";
+    LOG(WARNING) << _name << " disconnected";
     stopBusiness();
     delete _cs;
     delete _req;
@@ -37,8 +37,8 @@ int MyWebsocketClient::Open() {
         return -1;
     }
     isNeedReconnect = false;
-    _peerAddress = _ws->peerAddress().toString();
-    LOG(WARNING) << "connection to " << _peerAddress << " success";
+    _name = _ws->peerAddress().toString();
+    LOG(WARNING) << "connection to " << _name << " success";
     return 0;
 }
 
@@ -51,8 +51,8 @@ int MyWebsocketClient::Reconnect() {
         return -1;
     }
     isNeedReconnect = false;
-    _peerAddress = _ws->peerAddress().toString();
-    LOG(WARNING) << "reconnection to " << _peerAddress << " success";
+    _name = _ws->peerAddress().toString();
+    LOG(WARNING) << "reconnection to " << _name << " success";
     return 0;
 }
 
@@ -75,16 +75,16 @@ int MyWebsocketClient::SendBase(string pkg) {
     LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << pkg;
     try {
         auto len = _ws->sendFrame(pkg.data(), pkg.length());
-        VLOG(2) << _peerAddress << " send len:" << len << " len_send:" << to_string(pkg.length());
+        VLOG(2) << _name << " send len:" << len << " len_send:" << to_string(pkg.length());
         if (len < 0) {
-            LOG(ERROR) << _peerAddress << " send len < 0";
+            LOG(ERROR) << _name << " send len < 0";
             ret = -2;
         } else if (len != pkg.size()) {
-            LOG(ERROR) << _peerAddress << " send len !=len_send";
+            LOG(ERROR) << _name << " send len !=len_send";
             ret = -2;
         }
     } catch (Poco::Exception &exc) {
-        LOG(ERROR) << _peerAddress << " send error:" << exc.code() << exc.displayText();
+        LOG(ERROR) << _name << " send error:" << exc.code() << exc.displayText();
         if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK && exc.code() != POCO_EAGAIN) {
             ret = -2;
         } else {
@@ -108,16 +108,16 @@ int MyWebsocketClient::Send(char *buf_send, int len_send) {
     LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << string(buf_send);
     try {
         auto len = _ws->sendFrame(buf_send, len_send);
-        VLOG(2) << _peerAddress << " send len:" << len << " len_send:" << len_send;
+        VLOG(2) << _name << " send len:" << len << " len_send:" << len_send;
         if (len < 0) {
-            LOG(ERROR) << _peerAddress << " send len < 0";
+            LOG(ERROR) << _name << " send len < 0";
             ret = -2;
         } else if (len != len_send) {
-            LOG(ERROR) << _peerAddress << " send len !=len_send";
+            LOG(ERROR) << _name << " send len !=len_send";
             ret = -2;
         }
     } catch (Poco::Exception &exc) {
-        LOG(ERROR) << _peerAddress << " send error:" << exc.code() << exc.displayText();
+        LOG(ERROR) << _name << " send error:" << exc.code() << exc.displayText();
         if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK && exc.code() != POCO_EAGAIN) {
             ret = -2;
         } else {
@@ -137,7 +137,7 @@ int MyWebsocketClient::Send(char *buf_send, int len_send) {
 }
 
 int MyWebsocketClient::ThreadRecv(MyWebsocketClient *local) {
-    LOG(WARNING) << local->_peerAddress << " ThreadRecv start";
+    LOG(WARNING) << local->_name << " ThreadRecv start";
     while (local->_isRun) {
         std::this_thread::sleep_for(1s);
         if (!local->isNeedReconnect) {
@@ -146,7 +146,7 @@ int MyWebsocketClient::ThreadRecv(MyWebsocketClient *local) {
             int flags;
             int len = local->_ws->receiveFrame(local->recvBuf, recvLen, flags);
             if (len == 0 && flags == 0) {
-                LOG(ERROR) << local->_peerAddress << " receiveBytes " << len;;
+                LOG(ERROR) << local->_name << " receiveBytes " << len;;
                 local->isNeedReconnect = true;
             } else {
                 local->_fsm->TriggerAction(local->recvBuf, len);
@@ -154,12 +154,12 @@ int MyWebsocketClient::ThreadRecv(MyWebsocketClient *local) {
         }
     }
 
-    LOG(WARNING) << local->_peerAddress << " ThreadRecv start";
+    LOG(WARNING) << local->_name << " ThreadRecv start";
     return 0;
 }
 
 void MyWebsocketClient::ThreadHeartbeat(MyWebsocketClient *local) {
-    LOG(WARNING) << local->_peerAddress << " heartbeat thread start";
+    LOG(WARNING) << local->_name << " heartbeat thread start";
     while (local->_isRun) {
         std::this_thread::sleep_for(5s);
         if (!local->isNeedReconnect) {
@@ -170,11 +170,11 @@ void MyWebsocketClient::ThreadHeartbeat(MyWebsocketClient *local) {
                 string msg = json::encode(req);
                 int ret = local->SendBase(msg);
                 if (ret < 0) {
-                    LOG(ERROR) << local->_peerAddress << " send err";
+                    LOG(ERROR) << local->_name << " send err";
                     local->isNeedReconnect = true;
                 }
             } catch (Poco::Exception &exc) {
-                LOG(ERROR) << local->_peerAddress << " send error:" << exc.code()
+                LOG(ERROR) << local->_name << " send error:" << exc.code()
                         << exc.displayText();
                 if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK &&
                     exc.code() != POCO_EAGAIN) {
@@ -183,5 +183,5 @@ void MyWebsocketClient::ThreadHeartbeat(MyWebsocketClient *local) {
             }
         }
     }
-    LOG(WARNING) << local->_peerAddress << " heartbeat thread end";
+    LOG(WARNING) << local->_name << " heartbeat thread end";
 }

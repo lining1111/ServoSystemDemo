@@ -42,7 +42,7 @@ bool LocalConfig::isShowMsgType(const string& msgType) {
 int LocalConfig::getDeviceConfigFromYAML(const string& path) {
     //判断文件是否存在
     if (!std::ifstream(path)) {
-        LOG(ERROR) << "ini file not exist";
+        LOG(ERROR) << "config file not exist";
         return -1;
     }
 
