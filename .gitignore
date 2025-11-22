@@ -1,4 +1,4 @@
 .idea
 .git
-cmake-build-debug
-conan/build
+cmake-build-*
+conan/build*

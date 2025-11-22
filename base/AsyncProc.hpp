@@ -8,12 +8,24 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
+
 #include <glog/logging.h>
 #include "base/fsm/FSM.h"
 #include <thread>
 #include <vector>
 #include <string>
 #include <future>
+
+class MsgNotification : public Poco::Notification {
+public:
+    explicit MsgNotification(const string msg) : _msg(msg) {
+    }
+
+    string message() const { return _msg; }
+
+private:
+    string _msg;
+};
 
 template<typename T>
 class AsyncProc {
@@ -35,7 +47,8 @@ public:
     uint64_t timeRecv = 0;
 
 public:
-    AsyncProc(string name = "notSet", int bufSize = 1024*1024*4, int queueSize = 1024) : _name(name), _BUFFER_SIZE(bufSize), MaxQueueSize(queueSize) {
+    AsyncProc(string name = "notSet", int bufSize = 1024 * 1024 * 4, int queueSize = 1024) : _name(name),
+        _BUFFER_SIZE(bufSize), MaxQueueSize(queueSize) {
         timeRecv = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
         timeSend = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -50,7 +63,7 @@ public:
         LOG(WARNING) << _name << " release";
     }
 
-    void startBusiness() {
+    virtual void startBusiness() {
         _isRun = true;
         LOG(WARNING) << _name << " start business";
         isLocalThreadRun = true;
@@ -72,7 +85,7 @@ public:
     // static int ThreadStateMachine(AsyncProc *local);//子类也要实现
 private:
     static int ThreadStateMachine(AsyncProc *local) {
-        LOG(WARNING) << local->_name << " ThreadStateMachine start";
+        LOG(WARNING) << local->_name << " " << __FUNCTION__ << " start";
         local->_pkgCache.clear();
         while (local->_isRun) {
             if (local->_fsm->WaitTriggerAction()) {
@@ -81,7 +94,7 @@ private:
                 }
             }
         }
-        LOG(WARNING) << local->_name << " ThreadStateMachine end";
+        LOG(WARNING) << local->_name << " " << __FUNCTION__ << " stop";
         return 0;
     }
 };
