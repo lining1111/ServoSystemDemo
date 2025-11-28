@@ -1,7 +1,8 @@
 [requires]
 gflags/2.2.2
 glog/0.6.0
-fmt/9.0.0
+fmt/10.0.0
+spdlog/1.11.0
 poco/1.12.0
 yaml-cpp/0.8.0
 mini/0.9.16
