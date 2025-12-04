@@ -7,7 +7,6 @@
 #include <fstream>
 #include <glog/logging.h>
 #include <Poco/Util/Application.h>
-#include <Poco/Path.h>
 #include <Poco/AutoPtr.h>
 #include <Poco/Util/IniFileConfiguration.h>
 #include <mini/ini.h>
@@ -16,15 +15,11 @@ using namespace Poco::Util;
 using Poco::AutoPtr;
 using Poco::Util::IniFileConfiguration;
 
-LocalConfig::LocalConfig() {
+LocalConfig::LocalConfig() = default;
 
-}
+LocalConfig::~LocalConfig() = default;
 
-LocalConfig::~LocalConfig() {
-
-}
-
-bool LocalConfig::isShowMsgType(const string& msgType) {
+bool LocalConfig::isShowMsgType(const string& msgType) const {
     if (_config.msgType.empty()) {
         return false;
     } else {
@@ -59,13 +54,9 @@ int LocalConfig::getDeviceConfigFromYAML(const string& path) {
 
 LocalConfig localConfig;
 
-Device::Device() {
+Device::Device() = default;
 
-}
-
-Device::~Device() {
-
-}
+Device::~Device() = default;
 
 void Device::Init() {
     LOG(WARNING) << "Device init";

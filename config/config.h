@@ -53,7 +53,7 @@ public:
 
     ~LocalConfig();
 
-    bool isShowMsgType(const string &msgType);
+    bool isShowMsgType(const string &msgType) const;
 
     int getDeviceConfigFromYAML(const string &path);
 };

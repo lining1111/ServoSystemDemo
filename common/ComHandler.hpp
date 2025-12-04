@@ -13,6 +13,7 @@
 #include "base/AsyncProc.hpp"
 #include <glog/logging.h>
 #include <thread>
+#include <utility>
 #include <vector>
 #include <string>
 #include <future>
@@ -25,30 +26,27 @@ namespace common {
         shared_future<int> future_t2;
 
     public:
-        CommonHandler(string name): AsyncProc(name) {
-
+        explicit CommonHandler(string name) : AsyncProc(std::move(name)) {
         }
 
-        virtual ~CommonHandler() {
-        }
+        ~CommonHandler() override = default;
 
-        void startBusiness() {
+        void startBusiness() override {
             AsyncProc::startBusiness();
             future_t2 = std::async(std::launch::async, ThreadProcessPkg, this);
         }
 
-        void stopBusiness() {
-            _isRun = false;
-            if (isLocalThreadRun) {
-                isLocalThreadRun = false;
-                _fsm->Stop();
-                _pkgs.wakeUpAll();
+        void stopBusiness() override {
+            AsyncProc::stopBusiness();
+            try {
+                future_t2.wait();
+            } catch (exception &e) {
+                LOG(ERROR) << e.what();
             }
-            LOG(WARNING) << _name << " stop business";
         }
 
     public:
-        void Action() {
+        void Action() override {
             char value = 0x00;
             if (_fsm->Read(&value, 1) == 1) {
                 if (value == '*') {
@@ -106,7 +104,7 @@ namespace common {
                     }
                 }
             }
-            LOG(WARNING) << local->_name << " ThreadProcessPkg end";
+            LOG(WARNING) << local->_name << " ThreadProcessPkg stop";
             return 0;
         }
 

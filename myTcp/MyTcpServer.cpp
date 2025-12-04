@@ -5,30 +5,30 @@
 #include "localBusiness/localBusiness.h"
 
 MyTcpServerHandler::MyTcpServerHandler(const StreamSocket &socket) : TCPServerConnection(socket) {
-    __socket = socket;
+    socket_ = socket;
     _name = socket.peerAddress().toString();
     LOG(WARNING) << "connection from " << _name;
     recvBuf = new char[1024 * 1024];
-    startBusiness();
+    CommonHandler::startBusiness();
 }
 
 MyTcpServerHandler::~MyTcpServerHandler() {
     LOG(WARNING) << _name << " disconnected";
-    stopBusiness();
-    __socket.close();
+    CommonHandler::stopBusiness();
+    socket_.close();
     delete[] recvBuf;
 }
 
 void MyTcpServerHandler::run() {
     memset(recvBuf, 0, 1024 * 1024);
     int recvLen = 1024 * 1024;
-    int len = 0;
-    auto localBusiness = LocalBusiness::instance();
+    const auto localBusiness = LocalBusiness::instance();
     localBusiness->addConn(this);
     try {
+        int len = 0;
         do {
             recvLen = (_fsm->GetWriteLen() < (1024 * 1024)) ? _fsm->GetWriteLen() : (1024 * 1024);
-            len = __socket.receiveBytes(recvBuf, recvLen);
+            len = socket_.receiveBytes(recvBuf, recvLen);
             _fsm->TriggerAction(recvBuf, len);
         } while (len > 0);
     } catch (Poco::Exception &e) {
@@ -39,12 +39,15 @@ void MyTcpServerHandler::run() {
 }
 
 
-MyTcpServer::MyTcpServer(int port) : _port(port) {
+MyTcpServer::MyTcpServer(const int port) : _port(port) {
 }
 
 MyTcpServer::~MyTcpServer() {
-    Stop();
-    LOG(WARNING) << "server:" << to_string(_port) << " close";
+    if (srv) {
+        srv->stop();
+        delete srv;
+    }
+    LOG(WARNING) << "tcp server:" << to_string(_port) << " close";
 }
 
 int MyTcpServer::Open() {
@@ -54,6 +57,7 @@ int MyTcpServer::Open() {
         LOG(ERROR) << "tcp server err:" << e.displayText();
         return -1;
     }
+    srv->start();
     isListen = true;
     return 0;
 }
@@ -65,18 +69,7 @@ int MyTcpServer::ReOpen() {
         LOG(ERROR) << "tcp server err:" << e.displayText();
         return -1;
     }
-    isListen = true;
-    return 0;
-}
-
-
-int MyTcpServer::Run() {
-    //Starting TCP Server
     srv->start();
-    return 0;
-}
-
-int MyTcpServer::Stop() {
-    srv->stop();
+    isListen = true;
     return 0;
 }

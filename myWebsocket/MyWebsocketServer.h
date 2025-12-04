@@ -11,13 +11,11 @@
 #endif
 
 #include "common/ComHandler.hpp"
-#include "Poco/Net/NetException.h"
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/Net/HTTPServerResponse.h"
 #include "Poco/Net/WebSocket.h"
 #include "Poco/Net/HTTPRequestHandler.h"
 #include <Poco/Net/HTTPRequestHandlerFactory.h>
-#include <Poco/Net/ServerSocket.h>
 #include <Poco/Net/HTTPServer.h>
 
 using Poco::Net::WebSocket;
@@ -61,17 +59,13 @@ public:
     bool isListen = false;
     Poco::Net::HTTPServer *srv = nullptr;
 
-    MyWebsocketServer(int port);
+    explicit MyWebsocketServer(int port);
 
     ~MyWebsocketServer();
 
     int Open();
 
     int ReOpen();
-
-    int Run() const;
-
-    int Stop() const;
 };
 
 

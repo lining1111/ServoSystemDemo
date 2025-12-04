@@ -71,8 +71,7 @@ void CacheTimestamp::update(int index, uint64_t timestamp, int caches) {
 #include <Poco/StringTokenizer.h>
 
 namespace common {
-
-    std::vector<std::string> split_path(const std::string& path) {
+    std::vector<std::string> split_path(const std::string &path) {
         Poco::StringTokenizer tokenizer(path, "/", Poco::StringTokenizer::TOK_IGNORE_EMPTY);
         return std::vector<std::string>(tokenizer.begin(), tokenizer.end());
     }
@@ -96,13 +95,13 @@ namespace common {
         void init(string h, string c) {
             _handler = std::move(h);
             _content = std::move(c);
-            if (req != nullptr) {
-                delete req;
-            }
+
+            delete req;
+
             req = new Com();
-            if (rsp != nullptr) {
-                delete rsp;
-            }
+
+            delete rsp;
+
             rsp = new Com();
         }
 
@@ -120,7 +119,7 @@ namespace common {
         }
 
         //pre-processing fail, actual business
-        void decErr() {
+        void decErr() const {
             rsp->state = State_UnmarshalFail;
             rsp->param = "json decode err:" + err;
         }
@@ -129,7 +128,7 @@ namespace common {
         virtual void proc() = 0;
 
         //post-processing, return result
-        void enc() {
+        void enc() const {
             if (rsp != nullptr && rsp->state != State_CmdExeNoRsp) {
                 rsp->guid = req->guid;
                 //Code starting with Req, Req start with Rsp
@@ -176,7 +175,6 @@ int Handle##xxx(const string &h, const string &content) { \
         void proc() final {
             rsp->guid = req->guid;
             rsp->param = "rsp";
-
         }
     };
 

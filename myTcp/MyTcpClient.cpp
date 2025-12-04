@@ -2,26 +2,27 @@
 // Created by lining on 10/24/24.
 //
 #include "MyTcpClient.h"
+#include <utility>
 
-MyTcpClient::MyTcpClient(string serverip, int serverport) : server_ip(serverip),
+MyTcpClient::MyTcpClient(string serverip, int serverport) : server_ip(std::move(serverip)),
                                                             server_port(serverport) {
     recvBuf = new char[1024 * 1024];
     //    _reactor.addEventHandler(_socket, Observer<MyTcpClient, ReadableNotification>(*this,
     //                                                                                  &MyTcpClient::onReadable));
-    startBusiness();
+    CommonHandler::startBusiness();
 }
 
 MyTcpClient::~MyTcpClient() {
     LOG(WARNING) << _name << " disconnected";
 
     try {
-        _reactor.removeEventHandler(__socket, Observer<MyTcpClient, ReadableNotification>(*this,
+        _reactor.removeEventHandler(socket_, Observer<MyTcpClient, ReadableNotification>(*this,
                                         &MyTcpClient::onReadable));
     } catch (Poco::Exception &e) {
         LOG(ERROR) << e.displayText();
     }
 
-    stopBusiness();
+    CommonHandler::stopBusiness();
     delete[]recvBuf;
 }
 
@@ -29,7 +30,7 @@ int MyTcpClient::Open() {
     SocketAddress sa(server_ip, server_port);
     try {
         Poco::Timespan ts(1000 * 1000);
-        __socket.connect(sa, ts);
+        socket_.connect(sa, ts);
     } catch (ConnectionRefusedException &) {
         LOG(ERROR) << server_ip << ":" << server_port << " connect refuse";
         return -1;
@@ -44,15 +45,15 @@ int MyTcpClient::Open() {
         return -1;
     }
 
-    _name = __socket.peerAddress().toString();
+    _name = socket_.peerAddress().toString();
     LOG(WARNING) << "connection to " << _name << " success";
     Poco::Timespan ts1(1000 * 100);
-    __socket.setSendTimeout(ts1);
-    __socket.setKeepAlive(true);
-    __socket.setLinger(true, 0);
+    socket_.setSendTimeout(ts1);
+    socket_.setKeepAlive(true);
+    socket_.setLinger(true, 0);
 
     try {
-        _reactor.addEventHandler(__socket, Observer<MyTcpClient, ReadableNotification>(*this,
+        _reactor.addEventHandler(socket_, Observer<MyTcpClient, ReadableNotification>(*this,
                                      &MyTcpClient::onReadable));
     } catch (Poco::Exception &e) {
         LOG(ERROR) << e.displayText();
@@ -65,11 +66,11 @@ int MyTcpClient::Open() {
 }
 
 int MyTcpClient::Reconnect() {
-    __socket.close();
+    socket_.close();
     SocketAddress sa(server_ip, server_port);
     try {
         Poco::Timespan ts(1000 * 1000);
-        __socket.connect(sa, ts);
+        socket_.connect(sa, ts);
     } catch (ConnectionRefusedException &) {
         LOG(ERROR) << server_ip << ":" << server_port << " connect refuse";
         return -1;
@@ -84,15 +85,15 @@ int MyTcpClient::Reconnect() {
         return -1;
     }
 
-    _name = __socket.peerAddress().toString();
+    _name = socket_.peerAddress().toString();
     LOG(WARNING) << "reconnection to " << _name << " success";
     Poco::Timespan ts1(1000 * 100);
-    __socket.setSendTimeout(ts1);
-    __socket.setKeepAlive(true);
-    __socket.setLinger(true, 0);
+    socket_.setSendTimeout(ts1);
+    socket_.setKeepAlive(true);
+    socket_.setLinger(true, 0);
 
     try {
-        _reactor.addEventHandler(__socket, Observer<MyTcpClient, ReadableNotification>(*this,
+        _reactor.addEventHandler(socket_, Observer<MyTcpClient, ReadableNotification>(*this,
                                      &MyTcpClient::onReadable));
     } catch (Poco::Exception &e) {
         LOG(ERROR) << e.displayText();
@@ -125,7 +126,7 @@ void MyTcpClient::onReadable(ReadableNotification *pNf) {
     memset(recvBuf, 0, 1024 * 1024);
     int recvLen = (_fsm->GetWriteLen() < (1024 * 1024)) ? _fsm->GetWriteLen() : (1024 * 1024);
     try {
-        int len = __socket.receiveBytes(recvBuf, recvLen);
+        int len = socket_.receiveBytes(recvBuf, recvLen);
         if (len <= 0) {
             LOG(ERROR) << _name << " receiveBytes " << len;
             isNeedReconnect = true;

@@ -10,7 +10,7 @@ HttpClient::HttpClient(const std::string &host, int port)
 }
 
 std::string HttpClient::Get(const std::string &path,
-                            const std::map<std::string, std::string> &header, int &state) {
+                            const std::map<std::string, std::string> &header, int &state) const {
 
     httplib::Client cli(m_host, m_port);
     httplib::Headers _headers;
@@ -25,7 +25,7 @@ std::string HttpClient::Get(const std::string &path,
 }
 
 std::string HttpClient::Post(const std::string &path,
-                             const std::map<std::string, std::string> &header, int &state) {
+                             const std::map<std::string, std::string> &header, int &state) const {
     httplib::Client cli(m_host, m_port);
     httplib::Headers _headers;
     for (const auto& iter: header) {

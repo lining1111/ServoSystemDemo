@@ -3,6 +3,8 @@
 //
 
 #include "MyWebsocketClient.h"
+
+#include <utility>
 #include "common/common.h"
 #include "../config/config.h"
 #include "common/proc.h"
@@ -10,17 +12,17 @@
 using namespace common;
 
 MyWebsocketClient::MyWebsocketClient(string serverip, int serverport)
-    : CommonHandler("ws_client"), server_ip(serverip), server_port(serverport) {
+    : CommonHandler("ws_client"), server_ip(std::move(serverip)), server_port(serverport) {
     recvBuf = new char[1024 * 1024];
     _cs = new Poco::Net::HTTPClientSession(server_ip, server_port);
     _req = new Poco::Net::HTTPRequest(Poco::Net::HTTPRequest::HTTP_GET, "/ws", Poco::Net::HTTPRequest::HTTP_1_1);
     _rsp = new Poco::Net::HTTPResponse;
-    startBusiness();
+    CommonHandler::startBusiness();
 }
 
 MyWebsocketClient::~MyWebsocketClient() {
     LOG(WARNING) << _name << " disconnected";
-    stopBusiness();
+    CommonHandler::stopBusiness();
     delete _cs;
     delete _req;
     delete _rsp;

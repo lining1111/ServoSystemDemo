@@ -7,13 +7,8 @@
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #endif
-
-#include <glog/logging.h>
-#include <iostream>
 #include <string>
 #include <thread>
-#include <future>
-#include <Poco/Exception.h>
 #include "Poco/Net/WebSocket.h"
 #include "Poco/Net/HTTPClientSession.h"
 #include <Poco/Net/HTTPRequest.h>
@@ -45,7 +40,7 @@ public:
 public:
     MyWebsocketClient(string serverip, int serverport);
 
-    ~MyWebsocketClient();
+    ~MyWebsocketClient() override;
 
     int Open();
 

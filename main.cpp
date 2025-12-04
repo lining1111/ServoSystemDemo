@@ -102,10 +102,9 @@ int main(int argc, char **argv) {
         }
         std::this_thread::sleep_for(5s);
 
-        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).count();
-
         {
+            auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
             auto config = localConfig._config.localTcpServerConfig;
             if (config.isUse && config.isCheckClient) {
                 localBusiness->kickoff(config.timeout, now_ms, LocalBusiness::CT_REMOTETCP);

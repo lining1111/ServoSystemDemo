@@ -15,11 +15,11 @@ public:
 
     std::string Get(const std::string &path,
                     const std::map<std::string, std::string> &header,
-                    int &state);
+                    int &state) const;
 
     std::string Post(const std::string &path,
                      const std::map<std::string, std::string> &header,
-                     int &state);
+                     int &state) const;
 private:
     std::string m_host;
     int m_port;

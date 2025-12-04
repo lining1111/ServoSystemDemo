@@ -11,14 +11,11 @@
 #include "Poco/Net/SocketConnector.h"
 #include "Poco/Net/SocketAcceptor.h"
 #include "Poco/Net/StreamSocket.h"
-#include "Poco/Net/ServerSocket.h"
 #include "Poco/Net/SocketAddress.h"
 #include "Poco/Net/NetException.h"
 #include <Poco/Exception.h>
 #include "Poco/Observer.h"
-#include "Poco/NObserver.h"
 #include <glog/logging.h>
-#include <iostream>
 
 using Poco::Net::SocketReactor;
 using Poco::Net::SocketConnector;

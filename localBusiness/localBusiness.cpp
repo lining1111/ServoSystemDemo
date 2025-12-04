@@ -44,15 +44,15 @@ void LocalBusiness::Run() {
     for (const auto &iter: serverList) {
         auto s = iter.second;
         if (s->Open() == 0) {
+            LOG(WARNING) << "tcp server open success:" << s.get()->srv->port();
         }
-        s->Run();
         std::this_thread::sleep_for(3s);
     }
 
     for (const auto &iter: wsServerList) {
         auto s = iter.second;
         if (s->Open() == 0) {
-            s->Run();
+            LOG(WARNING) << "ws server open success:" << s.get()->srv->port();
         }
         std::this_thread::sleep_for(3s);
     }
@@ -411,7 +411,6 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
             if (!s->isListen) {
                 s->ReOpen();
                 if (s->isListen) {
-                    s->Run();
                     LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port << " 重启";
                 } else {
                     LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port << " 重启失败";

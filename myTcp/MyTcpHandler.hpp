@@ -14,13 +14,13 @@ using Poco::Net::StreamSocket;
 
 class MyTcpHandler : public common::CommonHandler {
 public:
-    StreamSocket __socket;
+    StreamSocket socket_;
 
 public:
     MyTcpHandler() : CommonHandler("MyTcpHandler") {
     }
 
-    ~MyTcpHandler() = default;
+    ~MyTcpHandler() override = default;
 
 public:
     int SendBase(string pkg) final {
@@ -31,7 +31,7 @@ public:
         }
         LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << pkg;
         try {
-            auto len = __socket.sendBytes(pkg.data(), pkg.length());
+            auto len = socket_.sendBytes(pkg.data(), pkg.length());
             VLOG(2) << _name << " send len:" << len << " len_send:" << to_string(pkg.length());
             if (len < 0) {
                 LOG(ERROR) << _name << " send len < 0";
@@ -65,7 +65,7 @@ public:
         std::unique_lock<std::mutex> lock(*mtx);
         LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << string(buf_send);
         try {
-            auto len = __socket.sendBytes(buf_send, len_send);
+            auto len = socket_.sendBytes(buf_send, len_send);
             VLOG(2) << _name << " send len:" << len << " len_send:" << len_send;
             if (len < 0) {
                 LOG(ERROR) << _name << " send len < 0";

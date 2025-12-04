@@ -18,7 +18,7 @@
 
 class MsgNotification : public Poco::Notification {
 public:
-    explicit MsgNotification(const string msg) : _msg(msg) {
+    explicit MsgNotification(const string &msg) : _msg(msg) {
     }
 
     string message() const { return _msg; }
@@ -35,26 +35,24 @@ public:
 
     bool _isRun = false;
 
-    int _BUFFER_SIZE = 1024 * 1024 * 4;
+    int BUFFER_SIZE = 1024 * 1024 * 4;
     FSM *_fsm = nullptr;
     Poco::NotificationQueue _pkgs;
     int MaxQueueSize = 1024; //最大的消息队列长度
     T _pkgCache;
-    bool isLocalThreadRun = false;
     shared_future<int> future_t1;
-    // shared_future<int> future_t2;
     uint64_t timeSend = 0;
     uint64_t timeRecv = 0;
 
 public:
-    AsyncProc(string name = "notSet", int bufSize = 1024 * 1024 * 4, int queueSize = 1024) : _name(name),
-        _BUFFER_SIZE(bufSize), MaxQueueSize(queueSize) {
+    explicit AsyncProc(string name = "notSet", int bufSize = 1024 * 1024 * 4, int queueSize = 1024) : _name(std::move(name)),
+        BUFFER_SIZE(bufSize), MaxQueueSize(queueSize) {
         timeRecv = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
         timeSend = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
         mtx = new std::mutex();
-        _fsm = new FSM(_BUFFER_SIZE);
+        _fsm = new FSM(BUFFER_SIZE);
     }
 
     virtual ~AsyncProc() {
@@ -66,17 +64,19 @@ public:
     virtual void startBusiness() {
         _isRun = true;
         LOG(WARNING) << _name << " start business";
-        isLocalThreadRun = true;
         future_t1 = std::async(std::launch::async, ThreadStateMachine, this);
     }
 
-    void stopBusiness() {
+    virtual void stopBusiness() {
         _isRun = false;
-        if (isLocalThreadRun) {
-            isLocalThreadRun = false;
-            _fsm->Stop();
-            _pkgs.wakeUpAll();
+        _fsm->Stop();
+        _pkgs.wakeUpAll();
+        try {
+            future_t1.wait();
+        } catch (exception &e) {
+            LOG(ERROR) << e.what();
         }
+
         LOG(WARNING) << _name << " stop business";
     }
 

@@ -5,13 +5,13 @@
 #include "MyWebsocketServer.h"
 #include "localBusiness/localBusiness.h"
 
-MyWebSocketRequestHandler::MyWebSocketRequestHandler():CommonHandler("ws_client") {
+MyWebSocketRequestHandler::MyWebSocketRequestHandler() : CommonHandler("ws_client") {
     recvBuf = new char[1024 * 1024];
-    startBusiness();
+    CommonHandler::startBusiness();
 }
 
 MyWebSocketRequestHandler::~MyWebSocketRequestHandler() {
-    stopBusiness();
+    CommonHandler::stopBusiness();
     delete[]recvBuf;
     delete _ws;
 }
@@ -130,7 +130,10 @@ MyWebsocketServer::MyWebsocketServer(const int port) : _port(port) {
 }
 
 MyWebsocketServer::~MyWebsocketServer() {
-    srv->stop();
+    if (srv != nullptr) {
+        srv->stop();
+        delete srv;
+    }
 }
 
 int MyWebsocketServer::Open() {
@@ -140,6 +143,7 @@ int MyWebsocketServer::Open() {
         LOG(ERROR) << "ws server err:" << e.displayText();
         return -1;
     }
+    srv->start();
     isListen = true;
     return 0;
 }
@@ -151,16 +155,7 @@ int MyWebsocketServer::ReOpen() {
         LOG(ERROR) << "ws server err:" << e.displayText();
         return -1;
     }
-    isListen = true;
-    return 0;
-}
-
-int MyWebsocketServer::Run() const{
     srv->start();
-    return 0;
-}
-
-int MyWebsocketServer::Stop() const{
-    srv->stop();
+    isListen = true;
     return 0;
 }
