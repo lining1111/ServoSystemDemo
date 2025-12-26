@@ -150,16 +150,17 @@ namespace common {
 
     public:
         int exe(string h, string c) {
+            int ret = 0;
             init(std::move(h), std::move(c));
             if (dec() != 0) {
                 decErr();
                 enc();
-                return -1;
+                ret = -1;
             } else {
                 proc();
                 enc();
-                return 0;
             }
+            return ret;
         }
     };
 
