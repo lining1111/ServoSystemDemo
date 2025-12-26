@@ -40,13 +40,14 @@ public:
     Poco::NotificationQueue _pkgs;
     int MaxQueueSize = 1024; //最大的消息队列长度
     T _pkgCache;
-    shared_future<int> future_t1;
+    std::thread t_stateMachine;
     uint64_t timeSend = 0;
     uint64_t timeRecv = 0;
 
 public:
-    explicit AsyncProc(string name = "notSet", int bufSize = 1024 * 1024 * 4, int queueSize = 1024) : _name(std::move(name)),
-        BUFFER_SIZE(bufSize), MaxQueueSize(queueSize) {
+    explicit AsyncProc(string name = "notSet", int bufSize = 1024 * 1024 * 4,
+                       int queueSize = 1024) : _name(std::move(name)),
+                                               BUFFER_SIZE(bufSize), MaxQueueSize(queueSize) {
         timeRecv = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
         timeSend = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -64,17 +65,15 @@ public:
     virtual void startBusiness() {
         _isRun = true;
         LOG(WARNING) << _name << " start business";
-        future_t1 = std::async(std::launch::async, ThreadStateMachine, this);
+        t_stateMachine = std::thread(ThreadStateMachine, this);
     }
 
     virtual void stopBusiness() {
         _isRun = false;
         _fsm->Stop();
         _pkgs.wakeUpAll();
-        try {
-            future_t1.wait();
-        } catch (exception &e) {
-            LOG(ERROR) << e.what();
+        if (t_stateMachine.joinable()) {
+            t_stateMachine.join();
         }
 
         LOG(WARNING) << _name << " stop business";

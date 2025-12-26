@@ -23,6 +23,10 @@ MyTcpClient::~MyTcpClient() {
     }
 
     CommonHandler::stopBusiness();
+    if (_tHeartbeat.joinable()) {
+        _tHeartbeat.join();
+    }
+
     delete[]recvBuf;
 }
 
@@ -108,7 +112,6 @@ int MyTcpClient::Reconnect() {
 int MyTcpClient::Run() {
     _t.start(_reactor);
     _tHeartbeat = std::thread(ThreadHeartbeat, this);
-    _tHeartbeat.detach();
 
     return 0;
 }

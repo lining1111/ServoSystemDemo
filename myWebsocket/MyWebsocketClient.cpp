@@ -23,6 +23,12 @@ MyWebsocketClient::MyWebsocketClient(string serverip, int serverport)
 MyWebsocketClient::~MyWebsocketClient() {
     LOG(WARNING) << _name << " disconnected";
     CommonHandler::stopBusiness();
+    if (_tRecv.joinable()) {
+        _tRecv.join();
+    }
+    if (_tHeartbeat.joinable()) {
+        _tHeartbeat.join();
+    }
     delete _cs;
     delete _req;
     delete _rsp;
@@ -60,11 +66,7 @@ int MyWebsocketClient::Reconnect() {
 
 int MyWebsocketClient::Run() {
     _tRecv = std::thread(ThreadRecv, this);
-    _tRecv.detach();
-
     _tHeartbeat = std::thread(ThreadHeartbeat, this);
-    _tHeartbeat.detach();
-
     return 0;
 }
 

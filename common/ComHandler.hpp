@@ -23,7 +23,7 @@ using namespace std;
 namespace common {
     class CommonHandler : public AsyncProc<string> {
     public:
-        shared_future<int> future_t2;
+        std::thread t_procPkg;
 
     public:
         explicit CommonHandler(string name) : AsyncProc(std::move(name)) {
@@ -33,15 +33,13 @@ namespace common {
 
         void startBusiness() override {
             AsyncProc::startBusiness();
-            future_t2 = std::async(std::launch::async, ThreadProcessPkg, this);
+            t_procPkg = std::thread(ThreadProcessPkg, this);
         }
 
         void stopBusiness() override {
             AsyncProc::stopBusiness();
-            try {
-                future_t2.wait();
-            } catch (exception &e) {
-                LOG(ERROR) << e.what();
+            if (t_procPkg.joinable()) {
+                t_procPkg.join();
             }
         }
 

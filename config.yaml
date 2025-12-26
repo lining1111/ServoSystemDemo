@@ -2,7 +2,7 @@ msgType:
   - COM
   - HC
 localTcpServerConfig:
-  isUse: true
+  isUse: false
   name: server1
   port: 10001
   isCheckClient: false
@@ -13,7 +13,7 @@ remoteTcpServerConfig:
   ip: 192.168.127.1
   port: 8083
 localWSServerConfig:
-  isUse: false
+  isUse: true
   name: ws_server1
   port: 10001
   isCheckClient: false

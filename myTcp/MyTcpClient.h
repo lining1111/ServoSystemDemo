@@ -42,7 +42,6 @@ public:
     SocketReactor _reactor;
     Poco::Thread _t;
     char *recvBuf = nullptr;
-    std::thread _tRecv;
     std::thread _tHeartbeat;
 public:
     MyTcpClient(string serverip, int serverport);
