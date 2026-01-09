@@ -6,16 +6,16 @@
 #define GLOGHELPER_H
 
 #include <string>
-#include <future>
+#include <thread>
 
 class GlogHelper {
 private:
     bool isRun = false;
-    std::future<int> futureRun;
+    std::thread tClean;
 
     int scanPeriod = 5;
-    int keepDays = 1;
     std::string program;
+    int keepDays = 1;
     std::string logDir;
     bool isSendSTDOUT;
 public:
@@ -24,7 +24,7 @@ public:
     ~GlogHelper();
 
 private:
-    static int cleaner(GlogHelper *local);
+    static int cleaner(const GlogHelper *local);
 
 };
 
