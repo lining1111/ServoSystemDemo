@@ -11,3 +11,7 @@ target_link_libraries(test_websocketServer ${LIBS})
 add_executable(test_websocketClient test_websocketClient.cpp
         ${SRC_FILES})
 target_link_libraries(test_websocketClient ${LIBS})
+
+add_executable(testChan testChan.cpp
+        ${SRC_FILES})
+target_link_libraries(testChan ${LIBS})
