@@ -15,3 +15,7 @@ target_link_libraries(test_websocketClient ${LIBS})
 add_executable(testChan testChan.cpp
         ${SRC_FILES})
 target_link_libraries(testChan ${LIBS})
+
+add_executable(testMqtt test_mqtt.cpp
+        ${SRC_FILES})
+target_link_libraries(testMqtt ${LIBS})

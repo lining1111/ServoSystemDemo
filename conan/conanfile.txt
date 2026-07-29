@@ -7,6 +7,7 @@ poco/1.12.0
 yaml-cpp/0.8.0
 mini/0.9.16
 indicators/2.3
+paho-mqtt-cpp/1.5.3
 libcurl/8.2.1
 #openssl/3.1.2
 openssl/1.1.1p

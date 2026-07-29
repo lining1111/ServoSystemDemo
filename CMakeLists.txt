@@ -48,13 +48,14 @@ find_package(mini REQUIRED)
 find_package(CURL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(indicators REQUIRED)
+find_package(PahoMqttCpp REQUIRED)
 
 # windows不支持 m pthread
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Linux")
     set(LIBS ${LIBS} m pthread)
 endif ()
 
-set(LIBS ${LIBS} gflags::gflags glog::glog SQLite::SQLite3 fmt::fmt Poco::Poco yaml-cpp mini::mini CURL::libcurl openssl::openssl indicators::indicators)
+set(LIBS ${LIBS} gflags::gflags glog::glog SQLite::SQLite3 fmt::fmt Poco::Poco yaml-cpp mini::mini CURL::libcurl openssl::openssl indicators::indicators PahoMqttCpp::paho-mqttpp3-static)
 
 ##源文件列表相关
 set(filtration_dirlist cmake-build-debug .idea .git conan cmake scripts test 3rd_libs)
