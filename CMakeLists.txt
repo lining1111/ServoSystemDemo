@@ -38,6 +38,8 @@ message("ARCH ${ARCH}")
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/3rd_libs)
 
+add_definitions(-DPROJECT_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+
 find_package(gflags REQUIRED)
 find_package(glog REQUIRED)
 find_package(SQLite3 REQUIRED)
@@ -49,6 +51,8 @@ find_package(CURL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(indicators REQUIRED)
 find_package(PahoMqttCpp REQUIRED)
+find_package(incbin)
+find_package(tomlplusplus)
 
 # windows不支持 m pthread
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Linux")

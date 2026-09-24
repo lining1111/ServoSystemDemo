@@ -19,3 +19,6 @@ target_link_libraries(testChan ${LIBS})
 add_executable(testMqtt test_mqtt.cpp
         ${SRC_FILES})
 target_link_libraries(testMqtt ${LIBS})
+
+add_executable(testRomfs test_romfs.cpp)
+target_link_libraries(testRomfs incbin::incbin tomlplusplus::tomlplusplus)
