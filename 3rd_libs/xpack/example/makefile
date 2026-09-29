@@ -34,3 +34,10 @@ yaml:yaml.cpp
 	@./$@
 	@-rm $@
 	@-rm -rf $@.dSYM
+
+toml:toml.cpp
+	$(GPP) -o $@ -g toml.cpp -Wall -Wextra -I ../.. -std=c++17
+	@echo ============ run $@ ================
+	@./$@
+	@-rm $@
+	@-rm -rf $@.dSYM

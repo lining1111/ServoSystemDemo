@@ -1,12 +1,13 @@
 xpack
 ====
 [English](README-en.md)
-* 用于在C++结构体和json/xml/yaml/bson/mysql/sqlite之间互相转换
+* 用于在C++结构体和json/xml/yaml/toml/bson/mysql/sqlite之间互相转换
 * 只有头文件, 无需编译库文件，所以也没有Makefile。
 * 支持bson，依赖于`libbson-1.0`，需自行安装。**未经充分测试**，具体请参考[README](README-bson.md)
 * 支持MySQL，依赖于`libmysqlclient-dev`，需自行安装。**未经充分测试**
 * 支持Sqlite，依赖于[libsqlite3](https://cppget.org/libsqlite3)，需自行安装。**未经充分测试**
 * 支持yaml，依赖于[yaml-cpp](https://github.com/jbeder/yaml-cpp)，需自行安装。**未经充分测试**
+* 支持toml，内置[toml++](https://github.com/marzer/tomlplusplus)（tomlplusplus，MIT），纯头文件无需安装，要求C++17；decode/encode均支持
 * 具体可以参考example的例子
 
 ------
@@ -27,6 +28,7 @@ xpack
 * [CDATA](#cdata)
 * [Qt支持](#qt支持)
 * [MySQL](#mysql)
+* [toml](#toml)
 * [重要说明](#重要说明)
 
 基本用法
@@ -406,6 +408,42 @@ MySQL
     - `static void decode(MYSQL_RES *result, const std::string&field, T &val)`
         - 用来解析某个字段，用于只想获得某个字段内容的场景，比如select id from mytable where name = lilei，只想获得id信息。val支持vector
 
+
+toml
+----
+- 用`xpack::toml::decode` / `xpack::toml::decode_file` 从TOML字符串/文件解析到XPACK结构体，
+  `xpack::toml::encode` 把结构体转成TOML文本，用法与json/yaml一致，如：
+```C++
+#include "xpack/toml.h"
+
+struct Config {
+    string               title;
+    vector<string>       tags;
+    map<string, string>  flags;
+    XPACK(O(title, tags, flags));
+};
+
+Config cfg;
+xpack::toml::decode_file("config.toml", cfg);        // 或 xpack::toml::decode(toml字符串, cfg);
+string toml_text = xpack::toml::encode(cfg);         // 结构体转TOML
+```
+- 底层解析由内置的[toml++](https://github.com/marzer/tomlplusplus)（MIT，纯头文件）完成，
+  无需编译额外源文件，要求C++17；引用方式`xpack/toml.h`，示例见`example/toml.cpp`，
+  直接`cd example && make toml`即可运行。
+- encode 的序列化规则：
+    - 结构体 / `std::map` → `[表头]` 小节（父子表头顺序合法，标量先于子表头）
+    - `std::vector` / 定长数组 → 行内数组 `[ ... ]`
+    - `vector<结构体>` → `[[表头]]` 数组表
+    - 数组里的表 / 内联场景 → 行内表 `{ ... }`
+    - TOML 没有 null：空指针/空值成员按 xpack 默认规则跳过
+- 类型映射：
+    - table → 结构体 / `std::map`
+    - array → `std::vector` / 定长数组
+    - string / integer / float / boolean → 对应C++类型
+    - datetime / date / time → `std::string`（自动格式化为文本，如`2024-01-15T10:30:00Z`）
+    - 数字 → string字段：宽松转换（与yaml-cpp的as<string>类似）
+- 字段缺失时跳过并保留默认值；解析失败或类型不匹配抛异常，消息带字段路径。
+- 注意：默认`TOML_EXCEPTIONS=1`（toml++ 默认值），请勿定义`TOML_EXCEPTIONS=0`。
 
 重要说明
 ----

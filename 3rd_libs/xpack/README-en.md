@@ -1,10 +1,11 @@
 xpack 
 ==== 
-* Used to convert between C++ structure and json/xml, bson is supported in [xbson](https://github.com/xyz347/xbson). 
+* Used to convert between C++ structure and json/xml/bson/mysql/sqlite/toml. 
 * Only header files, no need to compile library files, so there is no Makefile. 
 * Support MySQL, depends on `libmysqlclient-dev`, need to install by yourself. **not fully tested**
 * Support Sqlite, depends on [libsqlite3](https://cppget.org/libsqlite3), need to install it yourself. **not fully tested**
 * Support yaml, depend on [yaml-cpp](https://github.com/jbeder/yaml-cpp), need to install it yourself. **not fully tested**
+* Support toml, bundled [toml++](https://github.com/marzer/tomlplusplus) (MIT, header-only, C++17), no extra install needed. decode and encode supported.
 * For details, please refer to the example
 
 ------ 
@@ -396,6 +397,25 @@ Qt support
 - Modify [config.h](config.h) to enable XPACK_SUPPORT_QT(or enable it in compile flags)
 - Currently supports: QString/QMap/QList/QVector 
 
+toml
+----
+- Use `xpack::toml::decode` / `xpack::toml::decode_file` to parse TOML string/file into XPACK structures,
+  and `xpack::toml::encode` to serialize a structure to TOML, same style as json/yaml:
+```C++
+#include "xpack/toml.h"
+Config cfg;
+xpack::toml::decode_file("config.toml", cfg);        // or xpack::toml::decode(toml_string, cfg);
+std::string toml_text = xpack::toml::encode(cfg);    // struct -> TOML
+```
+- Backend parser is the bundled [toml++](https://github.com/marzer/tomlplusplus) (MIT, header-only, C++17).
+  No extra source files to compile; see `example/toml.cpp`, run with `cd example && make toml`.
+- encode rules: struct/std::map → `[table]` sections (valid parent-before-child order, scalars before sub-tables);
+  vector/fixed array → inline arrays `[ ... ]`; `vector<struct>` → `[[table]]` arrays of tables;
+  tables inside arrays / inline contexts → inline tables `{ ... }`.
+- Mapping: table → struct/std::map; array → std::vector/fixed array;
+  scalar → C++ types; datetime/date/time → std::string (e.g. `2024-01-15T10:30:00Z`).
+- Missing fields are skipped (default value kept); parse error / type mismatch throws with field path.
+- Note: relies on toml++ default `TOML_EXCEPTIONS=1`; do not define `TOML_EXCEPTIONS=0`.
 
 Important note
 ----

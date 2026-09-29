@@ -1,2 +1,4 @@
 [system]
 name = "test"
+age = 18
+isFemale = true

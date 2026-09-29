@@ -1,0 +1,19 @@
+# xpack toml example
+title = "xpack toml demo"
+
+tags = ["c++", "toml", "xpack"]
+flags = { a = "1", b = "2" }
+
+[server]
+host = "127.0.0.1"
+port = 8080
+debug = true
+
+[[products]]
+name = "Hammer"
+sku = 738594937
+
+[[products]]
+name = "Nail"
+sku = 284758393
+color = "gray"
