@@ -13,6 +13,7 @@ libcurl/8.2.1
 openssl/1.1.1p
 incbin/cci.20211107
 tomlplusplus/3.4.0
+efsw/1.6.3
 [options]
 poco*:enable_data_mysql=False
 glog*:with_unwind=False
