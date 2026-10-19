@@ -1,7 +1,7 @@
 //
 // Created by lining on 2023/4/23.
 //
-
+#define _HAS_STD_BYTE 0
 #include "config.h"
 #include "utils//utils.h"
 #include <fstream>

@@ -46,9 +46,9 @@ int GlogHelper::cleaner(const GlogHelper *local) {
     uint64_t keepSeconds = local->keepDays * 60 * 60 * 24;
     LOG(WARNING) << "start logfile cleaner";
     FileCleaner::Config config = {
-        .path = local->logDir,
-        .suffix = {".INFO.", ".WARNING.", ".ERROR.", ".FATAL."},
-        .keepSeconds = keepSeconds
+        local->logDir,
+        {".INFO.", ".WARNING.", ".ERROR.", ".FATAL."},
+        keepSeconds
     };
 
     FileCleaner fileCleaner(config);

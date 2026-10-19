@@ -2,14 +2,6 @@
 // Created by lining on 7/16/24.
 //
 
-#include "utils.h"
-#include <cstring>
-#include <fstream>
-#include <sstream>
-#include <algorithm>
-#include <cerrno>
-#include <iostream>
-
 #if defined(__linux__)
 
 #include <unistd.h>
@@ -27,11 +19,20 @@
 
 #elif defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#define _HAS_STD_BYTE 0
+#include <Windows.h>
 #include <pdh.h>
 #include <pdhmsg.h>
 #pragma comment(lib, "pdh.lib")
 #endif
+
+#include "utils.h"
+#include <cstring>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <cerrno>
+#include <iostream>
 
 #include <chrono>
 #include <Poco/File.h>
