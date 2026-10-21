@@ -1,3 +1,4 @@
+#include <Poco/Util/ServerApplication.h>
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -13,28 +14,87 @@
 #include "config/config.h"
 #include "localBusiness/localBusiness.h"
 
-bool isExit = false;
-
-void handleSignal(int sig) {
-    cout << "exit" << endl;
-    isExit = true;
-}
-
-//获取接入客户端列表
-void handleSignalUSR1(int sig) {
-    LOG(WARNING) << "USR1:show local info";
-    auto localBusiness = LocalBusiness::instance();
-    if (!localBusiness) {
-        LOG(WARNING) << "localBusiness is null";
-    } else {
-        localBusiness->ShowInfo();
-    }
-}
-
 DEFINE_int32(keep, 5, "日志清理周期 单位day，默认5");
 DEFINE_bool(isSendSTDOUT, false, "输出到控制台，默认false");
 DEFINE_string(logDir, "log", "日志的输出目录,默认log");
 DEFINE_string(configFile, "./config.yaml", "配置文件路径，默认./config.yaml");
+
+class MyApp : public Poco::Util::ServerApplication {
+protected:
+    int main(const std::vector<std::string> &args) override {
+        LOG(WARNING) << "获取程序参数:" << FLAGS_configFile;
+        if (localConfig.getDeviceConfigFromYAML(FLAGS_configFile) != 0) {
+            LOG(ERROR) << "获取配置文件失败";
+            return -1;
+        }
+        device.Init();
+
+        auto localBusiness = LocalBusiness::instance();
+        //Tcp
+        {
+            auto config = localConfig._config.localTcpServerConfig;
+            if (config.isUse) {
+                LOG(WARNING) << "开启本地tcp server通信";
+                localBusiness->AddServer(config.name, config.port);
+            }
+        }
+        {
+            auto config = localConfig._config.remoteTcpServerConfig;
+            if (config.isUse) {
+                LOG(WARNING) << "开启远程tcp server通信";
+                localBusiness->AddClient(config.name, config.ip, config.port);
+            }
+        }
+        //WS
+        {
+            auto config = localConfig._config.localWSServerConfig;
+            if (config.isUse) {
+                LOG(WARNING) << "开启本地ws server通信";
+                localBusiness->AddServer(config.name, config.port, false);
+            }
+        }
+        {
+            auto config = localConfig._config.remoteWSServerConfig;
+            if (config.isUse) {
+                LOG(WARNING) << "开启远程ws server通信";
+                localBusiness->AddClient(config.name, config.ip, config.port, false);
+            }
+        }
+
+        localBusiness->Run();
+        bool isExit = false;
+        std::thread t([&] {
+            while (!isExit) {
+                std::this_thread::sleep_for(5s);
+
+                {
+                    auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now().time_since_epoch()).count();
+                    auto config = localConfig._config.localTcpServerConfig;
+                    if (config.isUse && config.isCheckClient) {
+                        localBusiness->kickoff(config.timeout, now_ms, LocalBusiness::CT_REMOTETCP);
+                    }
+                    auto config_ws = localConfig._config.localWSServerConfig;
+                    if (config.isUse && config.isCheckClient) {
+                        localBusiness->kickoff(config.timeout, now_ms, LocalBusiness::CT_REMOTEWS);
+                    }
+                }
+                device.Keep();
+            }
+        });
+        t.detach();
+        waitForTerminationRequest();
+        isExit = true;
+        localBusiness->stopAllConns();
+        localBusiness->stopAllConns(false);
+        localBusiness->Stop();
+        delete localBusiness;
+
+        device.Exit();
+
+        return Poco::Util::Application::EXIT_OK;
+    }
+};
 
 int main(int argc, char **argv) {
     gflags::SetVersionString(VERSION_BUILD_TIME);
@@ -48,80 +108,99 @@ int main(int argc, char **argv) {
     GlogHelper glogHelper(pro, FLAGS_keep, FLAGS_logDir, FLAGS_isSendSTDOUT);
 
     LOG(WARNING) << "程序工作目录:" << Poco::Path::current() << ",版本号:" << VERSION_BUILD_TIME;
-    LOG(WARNING) << "获取程序参数:" << FLAGS_configFile;
-    if (localConfig.getDeviceConfigFromYAML(FLAGS_configFile) != 0) {
-        LOG(ERROR) << "获取配置文件失败";
-        return -1;
-    }
-
-    device.Init();
 #if defined(__linux__)
     signal(SIGPIPE, SIG_IGN);
-    signal(SIGUSR1, handleSignalUSR1); //USR1 show local info
 #endif
-    signal(SIGINT, handleSignal); //Ctrl+C
-    signal(SIGTERM, handleSignal); //kill
-
-    auto localBusiness = LocalBusiness::instance();
-    //Tcp
-    {
-        auto config = localConfig._config.localTcpServerConfig;
-        if (config.isUse) {
-            LOG(WARNING) << "开启本地tcp server通信";
-            localBusiness->AddServer(config.name, config.port);
-        }
-    }
-    {
-        auto config = localConfig._config.remoteTcpServerConfig;
-        if (config.isUse) {
-            LOG(WARNING) << "开启远程tcp server通信";
-            localBusiness->AddClient(config.name, config.ip, config.port);
-        }
-    }
-    //WS
-    {
-        auto config = localConfig._config.localWSServerConfig;
-        if (config.isUse) {
-            LOG(WARNING) << "开启本地ws server通信";
-            localBusiness->AddServer(config.name, config.port, false);
-        }
-    }
-    {
-        auto config = localConfig._config.remoteWSServerConfig;
-        if (config.isUse) {
-            LOG(WARNING) << "开启远程ws server通信";
-            localBusiness->AddClient(config.name, config.ip, config.port, false);
-        }
-    }
-
-    localBusiness->Run();
-
-    while (true) {
-        if (isExit) {
-            break;
-        }
-        std::this_thread::sleep_for(5s);
-
-        {
-            auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count();
-            auto config = localConfig._config.localTcpServerConfig;
-            if (config.isUse && config.isCheckClient) {
-                localBusiness->kickoff(config.timeout, now_ms, LocalBusiness::CT_REMOTETCP);
-            }
-            auto config_ws = localConfig._config.localWSServerConfig;
-            if (config.isUse && config.isCheckClient) {
-                localBusiness->kickoff(config.timeout, now_ms, LocalBusiness::CT_REMOTEWS);
-            }
-        }
-        device.Keep();
-    }
-    localBusiness->stopAllConns();
-    localBusiness->stopAllConns(false);
-    localBusiness->Stop();
-    delete localBusiness;
-
-    device.Exit();
-
-    return 0;
+    MyApp app;
+    return app.run(argc, argv);
 }
+
+// int main(int argc, char **argv) {
+//     gflags::SetVersionString(VERSION_BUILD_TIME);
+//     gflags::ParseCommandLineFlags(&argc, &argv, true);
+//     std::string proFul = std::string(argv[0]);
+//     std::string pro = getFileName(proFul);
+// #ifdef WIN32
+//     // 设置控制台输出代码页为 UTF-8
+//     SetConsoleOutputCP(65001);
+// #endif
+//     GlogHelper glogHelper(pro, FLAGS_keep, FLAGS_logDir, FLAGS_isSendSTDOUT);
+//
+//     LOG(WARNING) << "程序工作目录:" << Poco::Path::current() << ",版本号:" << VERSION_BUILD_TIME;
+//     LOG(WARNING) << "获取程序参数:" << FLAGS_configFile;
+//     if (localConfig.getDeviceConfigFromYAML(FLAGS_configFile) != 0) {
+//         LOG(ERROR) << "获取配置文件失败";
+//         return -1;
+//     }
+//
+//     device.Init();
+// #if defined(__linux__)
+//     signal(SIGPIPE, SIG_IGN);
+//     signal(SIGUSR1, handleSignalUSR1); //USR1 show local info
+// #endif
+//     signal(SIGINT, handleSignal); //Ctrl+C
+//     signal(SIGTERM, handleSignal); //kill
+//
+//     auto localBusiness = LocalBusiness::instance();
+//     //Tcp
+//     {
+//         auto config = localConfig._config.localTcpServerConfig;
+//         if (config.isUse) {
+//             LOG(WARNING) << "开启本地tcp server通信";
+//             localBusiness->AddServer(config.name, config.port);
+//         }
+//     }
+//     {
+//         auto config = localConfig._config.remoteTcpServerConfig;
+//         if (config.isUse) {
+//             LOG(WARNING) << "开启远程tcp server通信";
+//             localBusiness->AddClient(config.name, config.ip, config.port);
+//         }
+//     }
+//     //WS
+//     {
+//         auto config = localConfig._config.localWSServerConfig;
+//         if (config.isUse) {
+//             LOG(WARNING) << "开启本地ws server通信";
+//             localBusiness->AddServer(config.name, config.port, false);
+//         }
+//     }
+//     {
+//         auto config = localConfig._config.remoteWSServerConfig;
+//         if (config.isUse) {
+//             LOG(WARNING) << "开启远程ws server通信";
+//             localBusiness->AddClient(config.name, config.ip, config.port, false);
+//         }
+//     }
+//
+//     localBusiness->Run();
+//
+//     while (true) {
+//         if (isExit) {
+//             break;
+//         }
+//         std::this_thread::sleep_for(5s);
+//
+//         {
+//             auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+//                 std::chrono::system_clock::now().time_since_epoch()).count();
+//             auto config = localConfig._config.localTcpServerConfig;
+//             if (config.isUse && config.isCheckClient) {
+//                 localBusiness->kickoff(config.timeout, now_ms, LocalBusiness::CT_REMOTETCP);
+//             }
+//             auto config_ws = localConfig._config.localWSServerConfig;
+//             if (config.isUse && config.isCheckClient) {
+//                 localBusiness->kickoff(config.timeout, now_ms, LocalBusiness::CT_REMOTEWS);
+//             }
+//         }
+//         device.Keep();
+//     }
+//     localBusiness->stopAllConns();
+//     localBusiness->stopAllConns(false);
+//     localBusiness->Stop();
+//     delete localBusiness;
+//
+//     device.Exit();
+//
+//     return 0;
+// }
