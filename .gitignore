@@ -2,3 +2,4 @@
 .git
 cmake-build-*
 conan/build*
+version.h

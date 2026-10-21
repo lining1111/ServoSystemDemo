@@ -2,7 +2,7 @@
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #endif
-
+#include  "version.h"
 #include <iostream>
 #include <csignal>
 #include <gflags/gflags.h>
@@ -10,7 +10,6 @@
 #include <Poco/Path.h>
 #include "glogHelper/GlogHelper.h"
 #include "utils/utils.h"
-#include "version.h"
 #include "config/config.h"
 #include "localBusiness/localBusiness.h"
 
@@ -108,6 +107,7 @@ int main(int argc, char **argv) {
     GlogHelper glogHelper(pro, FLAGS_keep, FLAGS_logDir, FLAGS_isSendSTDOUT);
 
     LOG(WARNING) << "程序工作目录:" << Poco::Path::current() << ",版本号:" << VERSION_BUILD_TIME;
+    LOG(WARNING) << "GIT BRANCH:" << GIT_BRANCH << ",COMMIT:" << GIT_COMMIT;
 #if defined(__linux__)
     signal(SIGPIPE, SIG_IGN);
 #endif

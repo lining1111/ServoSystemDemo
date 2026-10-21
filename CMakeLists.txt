@@ -4,18 +4,55 @@ project(ServoSystemDemo VERSION 0.3.0)
 set(CMAKE_CXX_STANDARD 17)
 
 # 设置MSVC使用UTF-8
-if(MSVC)
+if (MSVC)
     # 方法1：全局设置
     add_compile_options(/utf-8)
 
     # 方法2：针对特定目标
     # add_executable(my_target main.cpp)
     # target_compile_options(my_target PRIVATE /utf-8)
-endif()
+endif ()
 
-string(TIMESTAMP COMPILE_TIME ${CMAKE_PROJECT_VERSION}_%Y%m%d_%H.%M.%S)
-set(build_time ${COMPILE_TIME})
+string(TIMESTAMP VERSION_COMPILE_TIME ${CMAKE_PROJECT_VERSION}_%Y%m%d_%H.%M.%S)
+
+find_package(Git QUIET)
+
+if (GIT_FOUND)
+    # 分支名
+    execute_process(
+            COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_BRANCH
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+    )
+    # 短 commit hash
+    execute_process(
+            COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_COMMIT
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+    )
+    if (NOT GIT_BRANCH)
+        set(GIT_BRANCH "unknown")
+    endif ()
+    if(NOT GIT_COMMIT)
+        set(GIT_COMMIT "unknown")
+    endif()
+else ()
+    set(GIT_BRANCH "unknown")
+    set(GIT_COMMIT "unknown")
+endif ()
+
+message(STATUS "Git Branch: ${GIT_BRANCH}, Git Commit: ${GIT_COMMIT}")
+
+
+set(version_build_time ${VERSION_COMPILE_TIME})
+set(git_branch ${GIT_BRANCH})
+set(git_commit ${GIT_COMMIT})
 configure_file("${PROJECT_SOURCE_DIR}/version.h.in" "${PROJECT_SOURCE_DIR}/version.h")
+
 
 #cmake依赖
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
@@ -71,6 +108,7 @@ endforeach (src_dir)
 list(REMOVE_ITEM SRC_FILES ./main.cpp)
 
 add_executable(ServoSystemDemo main.cpp ${SRC_FILES})
+
 target_link_libraries(ServoSystemDemo ${LIBS})
 redefine_file_macro(ServoSystemDemo)
 
