@@ -3,4 +3,3 @@
 cmake-build-*
 conan/build*
 version.h
-git_info.cmake

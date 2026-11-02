@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
     GlogHelper glogHelper(pro, FLAGS_keep, FLAGS_logDir, FLAGS_isSendSTDOUT);
 
     LOG(WARNING) << "程序工作目录:" << Poco::Path::current() << ",版本号:" << VERSION_BUILD_TIME;
-    LOG(WARNING) << "GIT BRANCH:" << GIT_BRANCH << ",COMMIT:" << GIT_COMMIT;
+    LOG(WARNING) << "GIT BRANCH:" << GIT_BRANCH << ",COMMIT:" << GIT_COMMIT << ",COMMIT_TIME:" << GIT_COMMIT_TIME;
 #if defined(__linux__)
     signal(SIGPIPE, SIG_IGN);
 #endif
