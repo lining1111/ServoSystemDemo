@@ -15,48 +15,21 @@ endif ()
 
 string(TIMESTAMP VERSION_COMPILE_TIME ${CMAKE_PROJECT_VERSION}_%Y%m%d_%H.%M.%S)
 
-find_package(Git QUIET)
+#cmake依赖
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
+include(utility)
+include(GitInfo)
 
-if (GIT_FOUND)
-    # 分支名
-    execute_process(
-            COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            OUTPUT_VARIABLE GIT_BRANCH
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_QUIET
-    )
-    # 短 commit hash
-    execute_process(
-            COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            OUTPUT_VARIABLE GIT_COMMIT
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_QUIET
-    )
-    if (NOT GIT_BRANCH)
-        set(GIT_BRANCH "unknown")
-    endif ()
-    if(NOT GIT_COMMIT)
-        set(GIT_COMMIT "unknown")
-    endif()
-else ()
-    set(GIT_BRANCH "unknown")
-    set(GIT_COMMIT "unknown")
-endif ()
-
+# 获取 git 信息
+# 远程调试时 cmake 在远程机器上执行，远程机器一般没有 .git 目录、也没有 git，
+# 此时会自动使用本地生成并同步过去的快照文件 git_info.cmake
+get_git_info(GIT_BRANCH GIT_COMMIT)
 message(STATUS "Git Branch: ${GIT_BRANCH}, Git Commit: ${GIT_COMMIT}")
-
 
 set(version_build_time ${VERSION_COMPILE_TIME})
 set(git_branch ${GIT_BRANCH})
 set(git_commit ${GIT_COMMIT})
 configure_file("${PROJECT_SOURCE_DIR}/version.h.in" "${PROJECT_SOURCE_DIR}/version.h")
-
-
-#cmake依赖
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
-include(utility)
 
 # https://github.com/cpm-cmake/CPM.cmake/issues/199
 # 出现错误 Unknown CMake command "CPMAddPackage"
