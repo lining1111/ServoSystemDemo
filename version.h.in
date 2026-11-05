@@ -6,7 +6,6 @@
 #cmakedefine PROJECT_VERSION_MAJOR "@CMAKE_PROJECT_VERSION_MAJOR@"
 #cmakedefine PROJECT_VERSION_MINOR "@CMAKE_PROJECT_VERSION_MINOR@"
 #cmakedefine PROJECT_VERSION_PATCH "@CMAKE_PROJECT_VERSION_PATCH@"
-#define VERSION_BUILD_TIME "@version_build_time@"
 
 // GIT_BRANCH / GIT_COMMIT / GIT_COMMIT_TIME 由 scripts/gen_version.sh 生成在 version_git.h
 #include "version_git.h"

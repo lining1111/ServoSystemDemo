@@ -13,7 +13,6 @@ if (MSVC)
     # target_compile_options(my_target PRIVATE /utf-8)
 endif ()
 
-string(TIMESTAMP VERSION_COMPILE_TIME ${CMAKE_PROJECT_VERSION}_%Y%m%d_%H.%M.%S)
 
 #cmake依赖
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
@@ -63,7 +62,6 @@ endif ()
 
 message(STATUS "Git Branch: ${GIT_BRANCH}, Git Commit: ${GIT_COMMIT}, Git Time: ${GIT_COMMIT_TIME}")
 
-set(version_build_time ${VERSION_COMPILE_TIME})
 configure_file("${PROJECT_SOURCE_DIR}/version.h.in" "${PROJECT_SOURCE_DIR}/version.h")
 
 # https://github.com/cpm-cmake/CPM.cmake/issues/199

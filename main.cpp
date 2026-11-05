@@ -96,7 +96,7 @@ protected:
 };
 
 int main(int argc, char **argv) {
-    gflags::SetVersionString(VERSION_BUILD_TIME);
+    gflags::SetVersionString(PROJECT_VERSION);
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     std::string proFul = std::string(argv[0]);
     std::string pro = getFileName(proFul);
@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
 #endif
     GlogHelper glogHelper(pro, FLAGS_keep, FLAGS_logDir, FLAGS_isSendSTDOUT);
 
-    LOG(WARNING) << "程序工作目录:" << Poco::Path::current() << ",版本号:" << VERSION_BUILD_TIME;
+    LOG(WARNING) << "程序工作目录:" << Poco::Path::current() << ",版本号:" << PROJECT_VERSION;
     LOG(WARNING) << "GIT BRANCH:" << GIT_BRANCH << ",COMMIT:" << GIT_COMMIT << ",COMMIT_TIME:" << GIT_COMMIT_TIME;
 #if defined(__linux__)
     signal(SIGPIPE, SIG_IGN);
