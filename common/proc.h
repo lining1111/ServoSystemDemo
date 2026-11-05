@@ -32,9 +32,9 @@ public:
 namespace common {
     std::vector<std::string> split_path(const std::string &path);
 
-    typedef int (*Handle)(const string &h, const string &content);
+    using HandleFun = std::function<std::string(const std::string &msgType, const std::string &guid, const std::string &req_json)>;
 
-    extern map<vector<string>, Handle> HandleRouter;
+    extern map<vector<string>, HandleFun> HandleRouter;
 }
 
 

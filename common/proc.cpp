@@ -76,114 +76,76 @@ namespace common {
         return std::vector<std::string>(tokenizer.begin(), tokenizer.end());
     }
 
-    /*
-     * Base class for business processing interfaces
-     */
-    class HandlerCom {
+    //处理handle的基础模板类
+    template<typename TReq, typename TRsp>
+    class HandlerBase {
     public:
-        Com *req = nullptr;
-        Com *rsp = nullptr;
-        string _handler;
-        string _content;
-        string err;
+        virtual ~HandlerBase() = default;
 
-    public:
-        HandlerCom() = default;
-
-        virtual ~HandlerCom() = default;
-
-        void init(string h, string c) {
-            _handler = std::move(h);
-            _content = std::move(c);
-
-            delete req;
-
-            req = new Com();
-
-            delete rsp;
-
-            rsp = new Com();
-        }
-
-        //pre-processing, parse request
-        int dec() {
-            int ret = 0;
+        // 统一处理入口
+        std::string Process(const std::string &code, const std::string &guid, const std::string &req_json) {
+            LOG(INFO) << "Process code: " << code << ", guid: " << guid << ", req_json: " << req_json;
+            TReq req;
+            // 1. 请求解码 —— 失败直接返回错误回复
             try {
-                json::decode(_content, *req);
-            } catch (std::exception &e) {
-                err = e.what();
-                LOG(ERROR) << "json decode err:" << err;
-                ret = -1;
+                xpack::json::decode(req_json, req);
+            } catch (const std::exception &e) {
+                return MakeError(code, guid, -100, std::string("decode failed: ") + e.what());
             }
-            return ret;
-        }
 
-        //pre-processing fail, actual business
-        void decErr() const {
-            rsp->state = State_UnmarshalFail;
-            rsp->param = "json decode err:" + err;
-        }
+            // 2. 业务处理 —— 失败也返回错误回复
+            TRsp rsp;
+            try {
+                rsp = HandleBusiness(req);
+            } catch (const std::exception &e) {
+                return MakeError(code, guid, -101, std::string("business failed: ") + e.what());
+            }
 
-        //pre-processing success, actual business
-        virtual void proc() = 0;
-
-        //post-processing, return result
-        void enc() const {
-            if (rsp != nullptr && rsp->state != State_CmdExeNoRsp) {
-                rsp->guid = req->guid;
-                //Code starting with Req, Req start with Rsp
-                if (req->code.find("Req") == 0) {
-                    rsp->code = "Rsp" + req->code.substr(3);
-                } else {
-                    rsp->code = req->code;
-                }
-
-                string pkg = json::encode(*rsp);
-                auto localBusiness = LocalBusiness::instance();
-                if (localBusiness->SendToClient(_handler, pkg) != 0) {
-                    VLOG(3) << _handler << " send failed:" << pkg;
-                } else {
-                    VLOG(3) << _handler << " send success:" << pkg;
-                }
+            // 3. 回复编码
+            try {
+                return xpack::json::encode(rsp);
+            } catch (const std::exception &e) {
+                return MakeError(code, guid, -102, std::string("encode failed: ") + e.what());
             }
         }
 
-    public:
-        int exe(string h, string c) {
-            int ret = 0;
-            init(std::move(h), std::move(c));
-            if (dec() != 0) {
-                decErr();
-                enc();
-                ret = -1;
-            } else {
-                proc();
-                enc();
-            }
-            return ret;
+    protected:
+        virtual TRsp HandleBusiness(const TReq &req) = 0;
+
+    private:
+        // 统一错误回复编码，编码本身也需保护
+        static std::string MakeError(const string &code, const string &guid, const int state,
+                                     const std::string &info) {
+            Com err;
+            err.code = code;
+            err.guid = guid;
+            err.state = state;
+            err.param = info;
+            return xpack::json::encode(err);
         }
     };
 
-#define Handle(xxx) \
-int Handle##xxx(const string &h, const string &content) { \
-    Handler##xxx handler;                   \
-    return handler.exe(h, content);          \
-}
-
-
-    class HandlerHeartbeat : public HandlerCom {
-    public:
-        void proc() final {
-            rsp->guid = req->guid;
-            rsp->param = "rsp";
+    class HeartbeatHandler : public HandlerBase<Com, Com> {
+    protected:
+        Com HandleBusiness(const Com &req) override {
+            Com rsp;
+            rsp.code = req.code;
+            rsp.guid = req.guid;
+            rsp.state = 0;
+            rsp.timestamp = req.timestamp;
+            rsp.param = "ok";
+            return rsp;
         }
     };
 
-    Handle(Heartbeat)
 
-
-    map<vector<string>, Handle> HandleRouter = {
-        {{"Heartbeat"}, HandleHeartbeat},
+    map<vector<string>, HandleFun> HandleRouter = {
+        {
+            {"Heartbeat"}, [](const string &code, const string &guid, const string &req_json) {
+                HeartbeatHandler handler;
+                return handler.Process(code, guid, req_json);
+            }
+        },
 
     };
 }

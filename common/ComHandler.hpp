@@ -80,7 +80,8 @@ namespace common {
                         auto iter = HandleRouter.find(keys);
                         if (iter != HandleRouter.end()) {
                             LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "local process:" << pkg;
-                            iter->second(local->_name, pkg);
+                            auto rsp_json = iter->second(code, guid, pkg);
+                            local->SendBase(rsp_json);
                         } else {
                             LOG(ERROR) << local->_name << " 最后没有对应的方法名:" << code << ",内容:" << pkg;
                             Com rsp;
