@@ -5,7 +5,7 @@
 #include "config.h"
 #include "utils//utils.h"
 #include <fstream>
-#include <glog/logging.h>
+#include "logHelper/LogHelper.h"
 #include <Poco/Util/Application.h>
 #include <Poco/AutoPtr.h>
 #include <Poco/Util/IniFileConfiguration.h>
@@ -37,14 +37,14 @@ bool LocalConfig::isShowMsgType(const string& msgType) const {
 int LocalConfig::getDeviceConfigFromYAML(const string& path) {
     //判断文件是否存在
     if (!std::ifstream(path)) {
-        LOG(ERROR) << "config file not exist";
+        LogHelper::Instance()->BizLog(spdlog::level::err, "config file not exist");
         return -1;
     }
 
     try {
         yaml::decode_file(path, this->_config);
     } catch (exception &e) {
-        LOG(ERROR) << e.what();
+        LogHelper::Instance()->BizLog(spdlog::level::err, "{}", e.what());
         return -1;
     }
 
@@ -59,7 +59,7 @@ Device::Device() = default;
 Device::~Device() = default;
 
 void Device::Init() {
-    LOG(WARNING) << "Device init";
+    LogHelper::Instance()->BizLog(spdlog::level::warn, "Device init");
     //TODO device init
 }
 
@@ -68,7 +68,7 @@ void Device::Keep() {
 }
 
 void Device::Exit() {
-    LOG(WARNING) << "Device exit";
+    LogHelper::Instance()->BizLog(spdlog::level::warn, "Device exit");
    //TODO device exit
 }
 

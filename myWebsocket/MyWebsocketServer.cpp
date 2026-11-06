@@ -3,6 +3,7 @@
 //
 
 #include "MyWebsocketServer.h"
+#include "logHelper/LogHelper.h"
 #include "localBusiness/localBusiness.h"
 
 MyWebSocketRequestHandler::MyWebSocketRequestHandler() : CommonHandler("ws_client") {
@@ -19,7 +20,7 @@ MyWebSocketRequestHandler::~MyWebSocketRequestHandler() {
 void MyWebSocketRequestHandler::handleRequest(HTTPServerRequest &request, HTTPServerResponse &response) {
     try {
         _ws = new WebSocket(request, response);
-        LOG(WARNING) << "websocket client connect:" << _ws->peerAddress().toString();
+        LogHelper::Instance()->WsLog(spdlog::level::warn, "websocket client connect:{}", _ws->peerAddress().toString());
         _name = _ws->peerAddress().toString();
         auto localBusiness = LocalBusiness::instance();
         localBusiness->addConn_ws(this);
@@ -35,7 +36,7 @@ void MyWebSocketRequestHandler::handleRequest(HTTPServerRequest &request, HTTPSe
             _fsm->TriggerAction(recvBuf, len);
         } while (len > 0 || (flags & WebSocket::FRAME_OP_BITMASK) != WebSocket::FRAME_OP_CLOSE);
         //Remove ws from the client array.
-        LOG(WARNING) << "websocket client disconnect:" << _ws->peerAddress().toString();
+        LogHelper::Instance()->WsLog(spdlog::level::warn, "websocket client disconnect:{}", _ws->peerAddress().toString());
         localBusiness->delConn(_ws->peerAddress().toString(), false);
         //!!!Here, do not delete this because Poco will enter the destructor.
     } catch (WebSocketException &exc) {
@@ -62,19 +63,23 @@ int MyWebSocketRequestHandler::SendBase(string pkg) {
     if (pkg.back() != '*') {
         pkg.push_back('*');
     }
-    LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << pkg;
+    if (localConfig.isShowMsgType("COM")) {
+        LogHelper::Instance()->WsLog(spdlog::level::info, "Rsp:{}", pkg);
+    }
     try {
         auto len = _ws->sendFrame(pkg.data(), pkg.length());
-        VLOG(2) << _name << " send len:" << len << " len_send:" << to_string(pkg.length());
+        LogHelper::Instance()->WsLog(spdlog::level::debug, "{} send len:{} len_send:{}", _name, len,
+                                     to_string(pkg.length()));
         if (len < 0) {
-            LOG(ERROR) << _name << " send len < 0";
+            LogHelper::Instance()->WsLog(spdlog::level::err, "{} send len < 0", _name);
             ret = -2;
         } else if (len != pkg.size()) {
-            LOG(ERROR) << _name << " send len !=len_send";
+            LogHelper::Instance()->WsLog(spdlog::level::err, "{} send len !=len_send", _name);
             ret = -2;
         }
     } catch (Poco::Exception &exc) {
-        LOG(ERROR) << _name << " send error:" << exc.code() << exc.displayText();
+        LogHelper::Instance()->WsLog(spdlog::level::err, "{} send error:{}{}", _name, exc.code(),
+                                     exc.displayText());
         if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK && exc.code() != POCO_EAGAIN) {
             ret = -2;
         } else {
@@ -95,19 +100,22 @@ int MyWebSocketRequestHandler::SendBase(string pkg) {
 int MyWebSocketRequestHandler::Send(char *buf_send, int len_send) {
     int ret = 0;
     std::unique_lock<std::mutex> lock(*mtx);
-    LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << string(buf_send);
+    if (localConfig.isShowMsgType("COM")) {
+        LogHelper::Instance()->WsLog(spdlog::level::info, "Rsp:{}", string(buf_send));
+    }
     try {
         auto len = _ws->sendFrame(buf_send, len_send);
-        VLOG(2) << _name << " send len:" << len << " len_send:" << len_send;
+        LogHelper::Instance()->WsLog(spdlog::level::debug, "{} send len:{} len_send:{}", _name, len, len_send);
         if (len < 0) {
-            LOG(ERROR) << _name << " send len < 0";
+            LogHelper::Instance()->WsLog(spdlog::level::err, "{} send len < 0", _name);
             ret = -2;
         } else if (len != len_send) {
-            LOG(ERROR) << _name << " send len !=len_send";
+            LogHelper::Instance()->WsLog(spdlog::level::err, "{} send len !=len_send", _name);
             ret = -2;
         }
     } catch (Poco::Exception &exc) {
-        LOG(ERROR) << _name << " send error:" << exc.code() << exc.displayText();
+        LogHelper::Instance()->WsLog(spdlog::level::err, "{} send error:{}{}", _name, exc.code(),
+                                     exc.displayText());
         if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK && exc.code() != POCO_EAGAIN) {
             ret = -2;
         } else {
@@ -140,7 +148,7 @@ int MyWebsocketServer::Open() {
     try {
         srv = new Poco::Net::HTTPServer(new MyWebsocketHandler, _port);
     } catch (Poco::Exception &e) {
-        LOG(ERROR) << "ws server err:" << e.displayText();
+        LogHelper::Instance()->WsLog(spdlog::level::err, "ws server err:{}", e.displayText());
         return -1;
     }
     srv->start();
@@ -152,7 +160,7 @@ int MyWebsocketServer::ReOpen() {
     try {
         srv = new Poco::Net::HTTPServer(new MyWebsocketHandler, _port);
     } catch (Poco::Exception &e) {
-        LOG(ERROR) << "ws server err:" << e.displayText();
+        LogHelper::Instance()->WsLog(spdlog::level::err, "ws server err:{}", e.displayText());
         return -1;
     }
     srv->start();

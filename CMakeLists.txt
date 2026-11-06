@@ -84,9 +84,9 @@ include_directories(${PROJECT_SOURCE_DIR}/3rd_libs)
 add_definitions(-DPROJECT_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
 find_package(gflags REQUIRED)
-find_package(glog REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(fmt REQUIRED)
+find_package(spdlog REQUIRED)
 find_package(Poco REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(mini REQUIRED)
@@ -102,7 +102,7 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Linux")
     set(LIBS ${LIBS} m pthread)
 endif ()
 
-set(LIBS ${LIBS} gflags::gflags glog::glog SQLite::SQLite3 fmt::fmt Poco::Poco yaml-cpp mini::mini CURL::libcurl openssl::openssl indicators::indicators PahoMqttCpp::paho-mqttpp3-static)
+set(LIBS ${LIBS} gflags::gflags SQLite::SQLite3 fmt::fmt spdlog::spdlog Poco::Poco yaml-cpp mini::mini CURL::libcurl openssl::openssl indicators::indicators PahoMqttCpp::paho-mqttpp3-static)
 
 ##源文件列表相关
 set(filtration_dirlist cmake-build-debug .idea .git conan cmake scripts test 3rd_libs)

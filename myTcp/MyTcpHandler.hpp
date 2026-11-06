@@ -29,19 +29,23 @@ public:
         if (pkg.back() != '*') {
             pkg.push_back('*');
         }
-        LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << pkg;
+        if (localConfig.isShowMsgType("COM")) {
+            LogHelper::Instance()->TcpLog(spdlog::level::info, "Rsp:{}", pkg);
+        }
         try {
             auto len = socket_.sendBytes(pkg.data(), pkg.length());
-            VLOG(2) << _name << " send len:" << len << " len_send:" << to_string(pkg.length());
+            LogHelper::Instance()->TcpLog(spdlog::level::debug, "{} send len:{} len_send:{}", _name, len,
+                                          to_string(pkg.length()));
             if (len < 0) {
-                LOG(ERROR) << _name << " send len < 0";
+                LogHelper::Instance()->TcpLog(spdlog::level::err, "{} send len < 0", _name);
                 ret = -2;
             } else if (len != pkg.size()) {
-                LOG(ERROR) << _name << " send len !=len_send";
+                LogHelper::Instance()->TcpLog(spdlog::level::err, "{} send len !=len_send", _name);
                 ret = -2;
             }
         } catch (Poco::Exception &exc) {
-            LOG(ERROR) << _name << " send error:" << exc.code() << exc.displayText();
+            LogHelper::Instance()->TcpLog(spdlog::level::err, "{} send error:{}{}", _name, exc.code(),
+                                          exc.displayText());
             if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK && exc.code() != POCO_EAGAIN) {
                 ret = -2;
             } else {
@@ -63,19 +67,22 @@ public:
     int Send(char *buf_send, int len_send) final {
         int ret = 0;
         std::unique_lock<std::mutex> lock(*mtx);
-        LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "Rsp:" << string(buf_send);
+        if (localConfig.isShowMsgType("COM")) {
+            LogHelper::Instance()->TcpLog(spdlog::level::info, "Rsp:{}", string(buf_send));
+        }
         try {
             auto len = socket_.sendBytes(buf_send, len_send);
-            VLOG(2) << _name << " send len:" << len << " len_send:" << len_send;
+            LogHelper::Instance()->TcpLog(spdlog::level::debug, "{} send len:{} len_send:{}", _name, len, len_send);
             if (len < 0) {
-                LOG(ERROR) << _name << " send len < 0";
+                LogHelper::Instance()->TcpLog(spdlog::level::err, "{} send len < 0", _name);
                 ret = -2;
             } else if (len != len_send) {
-                LOG(ERROR) << _name << " send len !=len_send";
+                LogHelper::Instance()->TcpLog(spdlog::level::err, "{} send len !=len_send", _name);
                 ret = -2;
             }
         } catch (Poco::Exception &exc) {
-            LOG(ERROR) << _name << " send error:" << exc.code() << exc.displayText();
+            LogHelper::Instance()->TcpLog(spdlog::level::err, "{} send error:{}{}", _name, exc.code(),
+                                          exc.displayText());
             if (exc.code() != POCO_ETIMEDOUT && exc.code() != POCO_EWOULDBLOCK && exc.code() != POCO_EAGAIN) {
                 ret = -2;
             } else {

@@ -11,7 +11,7 @@
 #include "common/proc.h"
 #include "config/config.h"
 #include "base/AsyncProc.hpp"
-#include <glog/logging.h>
+#include "logHelper/LogHelper.h"
 #include <thread>
 #include <utility>
 #include <vector>
@@ -58,7 +58,7 @@ namespace common {
         }
 
         static int ThreadProcessPkg(CommonHandler *local) {
-            LOG(WARNING) << local->_name << " ThreadProcessPkg start";
+            LogHelper::Instance()->BizLog(spdlog::level::warn, "{} ThreadProcessPkg start", local->_name);
             while (local->_isRun) {
                 Poco::AutoPtr<MsgNotification> pNf = dynamic_cast<MsgNotification *>(local->_pkgs.
                     waitDequeueNotification());
@@ -79,11 +79,14 @@ namespace common {
                         auto keys = common::split_path(code);
                         auto iter = HandleRouter.find(keys);
                         if (iter != HandleRouter.end()) {
-                            LOG_IF(INFO, localConfig.isShowMsgType("COM")) << "local process:" << pkg;
+                            if (localConfig.isShowMsgType("COM")) {
+                                LogHelper::Instance()->BizLog(spdlog::level::info, "local process:{}", pkg);
+                            }
                             auto rsp_json = iter->second(code, guid, pkg);
                             local->SendBase(rsp_json);
                         } else {
-                            LOG(ERROR) << local->_name << " 最后没有对应的方法名:" << code << ",内容:" << pkg;
+                            LogHelper::Instance()->BizLog(spdlog::level::err, "{} 最后没有对应的方法名:{},内容:{}",
+                                                          local->_name, code, pkg);
                             Com rsp;
                             rsp.guid = guid;
                             rsp.code = code;
@@ -103,7 +106,7 @@ namespace common {
                     }
                 }
             }
-            LOG(WARNING) << local->_name << " ThreadProcessPkg stop";
+            LogHelper::Instance()->BizLog(spdlog::level::warn, "{} ThreadProcessPkg stop", local->_name);
             return 0;
         }
 

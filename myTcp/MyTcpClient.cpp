@@ -13,13 +13,13 @@ MyTcpClient::MyTcpClient(string serverip, int serverport) : server_ip(std::move(
 }
 
 MyTcpClient::~MyTcpClient() {
-    LOG(WARNING) << _name << " disconnected";
+    LogHelper::Instance()->TcpLog(spdlog::level::warn, "{} disconnected", _name);
 
     try {
         _reactor.removeEventHandler(socket_, Observer<MyTcpClient, ReadableNotification>(*this,
                                         &MyTcpClient::onReadable));
     } catch (Poco::Exception &e) {
-        LOG(ERROR) << e.displayText();
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "{}", e.displayText());
     }
 
     CommonHandler::stopBusiness();
@@ -36,21 +36,22 @@ int MyTcpClient::Open() {
         Poco::Timespan ts(1000 * 1000);
         socket_.connect(sa, ts);
     } catch (ConnectionRefusedException &) {
-        LOG(ERROR) << server_ip << ":" << server_port << " connect refuse";
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "{}:{} connect refuse", server_ip, server_port);
         return -1;
     } catch (TimeoutException &) {
-        LOG(ERROR) << server_ip << ":" << server_port << " connect time out";
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "{}:{} connect time out", server_ip, server_port);
         return -1;
     } catch (NetException &) {
-        LOG(ERROR) << server_ip << ":" << server_port << " net exception";
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "{}:{} net exception", server_ip, server_port);
         return -1;
     } catch (Poco::Exception &e) {
-        LOG(ERROR) << server_ip << ":" << server_port << " exception:" << e.displayText();
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "{}:{} exception:{}", server_ip, server_port,
+                                      e.displayText());
         return -1;
     }
 
     _name = socket_.peerAddress().toString();
-    LOG(WARNING) << "connection to " << _name << " success";
+    LogHelper::Instance()->TcpLog(spdlog::level::warn, "connection to {} success", _name);
     Poco::Timespan ts1(1000 * 100);
     socket_.setSendTimeout(ts1);
     socket_.setKeepAlive(true);
@@ -60,7 +61,7 @@ int MyTcpClient::Open() {
         _reactor.addEventHandler(socket_, Observer<MyTcpClient, ReadableNotification>(*this,
                                      &MyTcpClient::onReadable));
     } catch (Poco::Exception &e) {
-        LOG(ERROR) << e.displayText();
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "{}", e.displayText());
     }
 
     isNeedReconnect = false;
@@ -76,21 +77,22 @@ int MyTcpClient::Reconnect() {
         Poco::Timespan ts(1000 * 1000);
         socket_.connect(sa, ts);
     } catch (ConnectionRefusedException &) {
-        LOG(ERROR) << server_ip << ":" << server_port << " connect refuse";
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "{}:{} connect refuse", server_ip, server_port);
         return -1;
     } catch (TimeoutException &) {
-        LOG(ERROR) << server_ip << ":" << server_port << " connect time out";
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "{}:{} connect time out", server_ip, server_port);
         return -1;
     } catch (NetException &) {
-        LOG(ERROR) << server_ip << ":" << server_port << " net exception";
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "{}:{} net exception", server_ip, server_port);
         return -1;
     } catch (Poco::Exception &e) {
-        LOG(ERROR) << server_ip << ":" << server_port << " exception:" << e.displayText();
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "{}:{} exception:{}", server_ip, server_port,
+                                      e.displayText());
         return -1;
     }
 
     _name = socket_.peerAddress().toString();
-    LOG(WARNING) << "reconnection to " << _name << " success";
+    LogHelper::Instance()->TcpLog(spdlog::level::warn, "reconnection to {} success", _name);
     Poco::Timespan ts1(1000 * 100);
     socket_.setSendTimeout(ts1);
     socket_.setKeepAlive(true);
@@ -100,7 +102,7 @@ int MyTcpClient::Reconnect() {
         _reactor.addEventHandler(socket_, Observer<MyTcpClient, ReadableNotification>(*this,
                                      &MyTcpClient::onReadable));
     } catch (Poco::Exception &e) {
-        LOG(ERROR) << e.displayText();
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "{}", e.displayText());
     }
 
     isNeedReconnect = false;
@@ -119,7 +121,7 @@ int MyTcpClient::Run() {
 void MyTcpClient::onReadable(ReadableNotification *pNf) {
     pNf->release();
     if (_fsm == nullptr) {
-        LOG(ERROR) << _name << " _fsm null";
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "{} _fsm null", _name);
         return;
     }
     if (isNeedReconnect) {
@@ -131,14 +133,14 @@ void MyTcpClient::onReadable(ReadableNotification *pNf) {
     try {
         int len = socket_.receiveBytes(recvBuf, recvLen);
         if (len <= 0) {
-            LOG(ERROR) << _name << " receiveBytes " << len;
+            LogHelper::Instance()->TcpLog(spdlog::level::err, "{} receiveBytes {}", _name, len);
             isNeedReconnect = true;
         } else {
             _fsm->TriggerAction(recvBuf, len);
         }
     } catch (Poco::Exception &e) {
-        LOG(ERROR) << _name << " receive error:" << e.code() << ","
-                << e.displayText();
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "{} receive error:{},{}", _name, e.code(),
+                                      e.displayText());
         if (e.code() != POCO_ETIMEDOUT && e.code() != POCO_EWOULDBLOCK &&
             e.code() != POCO_EAGAIN) {
             isNeedReconnect = true;
@@ -148,7 +150,7 @@ void MyTcpClient::onReadable(ReadableNotification *pNf) {
 
 
 void MyTcpClient::ThreadHeartbeat(MyTcpClient *local) {
-    LOG(WARNING) << local->_name << " heartbeat thread start";
+    LogHelper::Instance()->TcpLog(spdlog::level::warn, "{} heartbeat thread start", local->_name);
     while (local->_isRun) {
         std::this_thread::sleep_for(5s);
         if (!local->isNeedReconnect) {
@@ -159,12 +161,12 @@ void MyTcpClient::ThreadHeartbeat(MyTcpClient *local) {
                 string msg = json::encode(req);
                 int ret = local->SendBase(msg);
                 if (ret < 0) {
-                    LOG(ERROR) << local->_name << " send err";
+                    LogHelper::Instance()->TcpLog(spdlog::level::err, "{} send err", local->_name);
                     local->isNeedReconnect = true;
                 }
             } catch (Poco::Exception &e) {
-                LOG(ERROR) << local->_name << " send error:" << e.code()
-                        << e.displayText();
+                LogHelper::Instance()->TcpLog(spdlog::level::err, "{} send error:{}{}", local->_name, e.code(),
+                                              e.displayText());
                 if (e.code() != POCO_ETIMEDOUT && e.code() != POCO_EWOULDBLOCK &&
                     e.code() != POCO_EAGAIN) {
                     local->isNeedReconnect = true;
@@ -172,5 +174,5 @@ void MyTcpClient::ThreadHeartbeat(MyTcpClient *local) {
             }
         }
     }
-    LOG(WARNING) << local->_name << " heartbeat thread end";
+    LogHelper::Instance()->TcpLog(spdlog::level::warn, "{} heartbeat thread end", local->_name);
 }

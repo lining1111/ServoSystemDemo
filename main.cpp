@@ -6,14 +6,12 @@
 #include <iostream>
 #include <csignal>
 #include <gflags/gflags.h>
-#include <glog/logging.h>
 #include <Poco/Path.h>
-#include "glogHelper/GlogHelper.h"
+#include "logHelper/LogHelper.h"
 #include "utils/utils.h"
 #include "config/config.h"
 #include "localBusiness/localBusiness.h"
 
-DEFINE_int32(keep, 5, "日志清理周期 单位day，默认5");
 DEFINE_bool(isSendSTDOUT, false, "输出到控制台，默认false");
 DEFINE_string(logDir, "log", "日志的输出目录,默认log");
 DEFINE_string(configFile, "./config.yaml", "配置文件路径，默认./config.yaml");
@@ -21,9 +19,9 @@ DEFINE_string(configFile, "./config.yaml", "配置文件路径，默认./config.
 class MyApp : public Poco::Util::ServerApplication {
 protected:
     int main(const std::vector<std::string> &args) override {
-        LOG(WARNING) << "获取程序参数:" << FLAGS_configFile;
+        LogHelper::Instance()->BizLog(spdlog::level::warn, "获取程序参数:{}", FLAGS_configFile);
         if (localConfig.getDeviceConfigFromYAML(FLAGS_configFile) != 0) {
-            LOG(ERROR) << "获取配置文件失败";
+            LogHelper::Instance()->BizLog(spdlog::level::err, "获取配置文件失败");
             return -1;
         }
         device.Init();
@@ -33,14 +31,14 @@ protected:
         {
             auto config = localConfig._config.localTcpServerConfig;
             if (config.isUse) {
-                LOG(WARNING) << "开启本地tcp server通信";
+                LogHelper::Instance()->BizLog(spdlog::level::warn, "开启本地tcp server通信");
                 localBusiness->AddServer(config.name, config.port);
             }
         }
         {
             auto config = localConfig._config.remoteTcpServerConfig;
             if (config.isUse) {
-                LOG(WARNING) << "开启远程tcp server通信";
+                LogHelper::Instance()->BizLog(spdlog::level::warn, "开启远程tcp server通信");
                 localBusiness->AddClient(config.name, config.ip, config.port);
             }
         }
@@ -48,14 +46,14 @@ protected:
         {
             auto config = localConfig._config.localWSServerConfig;
             if (config.isUse) {
-                LOG(WARNING) << "开启本地ws server通信";
+                LogHelper::Instance()->BizLog(spdlog::level::warn, "开启本地ws server通信");
                 localBusiness->AddServer(config.name, config.port, false);
             }
         }
         {
             auto config = localConfig._config.remoteWSServerConfig;
             if (config.isUse) {
-                LOG(WARNING) << "开启远程ws server通信";
+                LogHelper::Instance()->BizLog(spdlog::level::warn, "开启远程ws server通信");
                 localBusiness->AddClient(config.name, config.ip, config.port, false);
             }
         }
@@ -98,16 +96,15 @@ protected:
 int main(int argc, char **argv) {
     gflags::SetVersionString(PROJECT_VERSION);
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    std::string proFul = std::string(argv[0]);
-    std::string pro = getFileName(proFul);
 #ifdef WIN32
     // 设置控制台输出代码页为 UTF-8
     SetConsoleOutputCP(65001);
 #endif
-    GlogHelper glogHelper(pro, FLAGS_keep, FLAGS_logDir, FLAGS_isSendSTDOUT);
+    LogHelper::Instance()->Init(FLAGS_logDir, FLAGS_isSendSTDOUT);
 
-    LOG(WARNING) << "程序工作目录:" << Poco::Path::current() << ",版本号:" << PROJECT_VERSION;
-    LOG(WARNING) << "GIT BRANCH:" << GIT_BRANCH << ",COMMIT:" << GIT_COMMIT << ",COMMIT_TIME:" << GIT_COMMIT_TIME;
+    LogHelper::Instance()->BizLog(spdlog::level::warn, "程序工作目录:{},版本号:{}", Poco::Path::current(), PROJECT_VERSION);
+    LogHelper::Instance()->BizLog(spdlog::level::warn, "GIT BRANCH:{},COMMIT:{},COMMIT_TIME:{}", GIT_BRANCH,
+                                  GIT_COMMIT, GIT_COMMIT_TIME);
 #if defined(__linux__)
     signal(SIGPIPE, SIG_IGN);
 #endif
@@ -118,18 +115,16 @@ int main(int argc, char **argv) {
 // int main(int argc, char **argv) {
 //     gflags::SetVersionString(VERSION_BUILD_TIME);
 //     gflags::ParseCommandLineFlags(&argc, &argv, true);
-//     std::string proFul = std::string(argv[0]);
-//     std::string pro = getFileName(proFul);
 // #ifdef WIN32
 //     // 设置控制台输出代码页为 UTF-8
 //     SetConsoleOutputCP(65001);
 // #endif
-//     GlogHelper glogHelper(pro, FLAGS_keep, FLAGS_logDir, FLAGS_isSendSTDOUT);
+//     LogHelper::Instance()->Init(FLAGS_logDir, FLAGS_isSendSTDOUT);
 //
-//     LOG(WARNING) << "程序工作目录:" << Poco::Path::current() << ",版本号:" << VERSION_BUILD_TIME;
-//     LOG(WARNING) << "获取程序参数:" << FLAGS_configFile;
+//     LogHelper::Instance()->BizLog(spdlog::level::warn, "程序工作目录:{},版本号:{}", Poco::Path::current(), VERSION_BUILD_TIME);
+//     LogHelper::Instance()->BizLog(spdlog::level::warn, "获取程序参数:{}", FLAGS_configFile);
 //     if (localConfig.getDeviceConfigFromYAML(FLAGS_configFile) != 0) {
-//         LOG(ERROR) << "获取配置文件失败";
+//         LogHelper::Instance()->BizLog(spdlog::level::err, "获取配置文件失败");
 //         return -1;
 //     }
 //
@@ -146,14 +141,14 @@ int main(int argc, char **argv) {
 //     {
 //         auto config = localConfig._config.localTcpServerConfig;
 //         if (config.isUse) {
-//             LOG(WARNING) << "开启本地tcp server通信";
+//             LogHelper::Instance()->BizLog(spdlog::level::warn, "开启本地tcp server通信");
 //             localBusiness->AddServer(config.name, config.port);
 //         }
 //     }
 //     {
 //         auto config = localConfig._config.remoteTcpServerConfig;
 //         if (config.isUse) {
-//             LOG(WARNING) << "开启远程tcp server通信";
+//             LogHelper::Instance()->BizLog(spdlog::level::warn, "开启远程tcp server通信");
 //             localBusiness->AddClient(config.name, config.ip, config.port);
 //         }
 //     }
@@ -161,14 +156,14 @@ int main(int argc, char **argv) {
 //     {
 //         auto config = localConfig._config.localWSServerConfig;
 //         if (config.isUse) {
-//             LOG(WARNING) << "开启本地ws server通信";
+//             LogHelper::Instance()->BizLog(spdlog::level::warn, "开启本地ws server通信");
 //             localBusiness->AddServer(config.name, config.port, false);
 //         }
 //     }
 //     {
 //         auto config = localConfig._config.remoteWSServerConfig;
 //         if (config.isUse) {
-//             LOG(WARNING) << "开启远程ws server通信";
+//             LogHelper::Instance()->BizLog(spdlog::level::warn, "开启远程ws server通信");
 //             localBusiness->AddClient(config.name, config.ip, config.port, false);
 //         }
 //     }

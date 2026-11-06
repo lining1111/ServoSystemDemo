@@ -7,6 +7,7 @@
 #endif
 
 #include "localBusiness.h"
+#include "logHelper/LogHelper.h"
 #include <Poco/LocalDateTime.h>
 #include <Poco/DateTimeFormatter.h>
 
@@ -44,7 +45,7 @@ void LocalBusiness::Run() {
     for (const auto &iter: serverList) {
         auto s = iter.second;
         if (s->Open() == 0) {
-            LOG(WARNING) << "tcp server open success:" << s.get()->srv->port();
+            LogHelper::Instance()->BizLog(spdlog::level::warn, "tcp server open success:{}", s.get()->srv->port());
         }
         std::this_thread::sleep_for(3s);
     }
@@ -52,7 +53,7 @@ void LocalBusiness::Run() {
     for (const auto &iter: wsServerList) {
         auto s = iter.second;
         if (s->Open() == 0) {
-            LOG(WARNING) << "ws server open success:" << s.get()->srv->port();
+            LogHelper::Instance()->BizLog(spdlog::level::warn, "ws server open success:{}", s.get()->srv->port());
         }
         std::this_thread::sleep_for(3s);
     }
@@ -104,7 +105,7 @@ void LocalBusiness::delConn(const string &peerAddress, bool isTcp) {
                 auto c = _conns.at(i);
                 if (c->_name == peerAddress) {
                     _conns.erase(_conns.begin() + i);
-                    LOG(WARNING) << "从数组踢出客户端:" << peerAddress;
+                    LogHelper::Instance()->BizLog(spdlog::level::warn, "从数组踢出客户端:{}", peerAddress);
                 }
             }
         }
@@ -115,7 +116,7 @@ void LocalBusiness::delConn(const string &peerAddress, bool isTcp) {
                 auto c = _conns_ws.at(i);
                 if (c->_name == peerAddress) {
                     _conns_ws.erase(_conns_ws.begin() + i);
-                    LOG(WARNING) << "从ws数组踢出客户端:" << peerAddress;
+                    LogHelper::Instance()->BizLog(spdlog::level::warn, "从ws数组踢出客户端:{}", peerAddress);
                 }
             }
         }
@@ -123,14 +124,14 @@ void LocalBusiness::delConn(const string &peerAddress, bool isTcp) {
 }
 
 void LocalBusiness::stopAllConns(bool isTcp) {
-    LOG(WARNING) << "stop allConns";
+    LogHelper::Instance()->BizLog(spdlog::level::warn, "stop allConns");
     if (isTcp) {
         std::unique_lock<std::mutex> lock(mtx);
         for (int i = 0; i < _conns.size(); i++) {
             if (_conns.at(i) != nullptr) {
                 auto c = _conns.at(i);
                 _conns.erase(_conns.begin() + i);
-                LOG(WARNING) << "从数组踢出客户端:" << c->_name;
+                LogHelper::Instance()->BizLog(spdlog::level::warn, "从数组踢出客户端:{}", c->_name);
             }
         }
     } else {
@@ -139,7 +140,7 @@ void LocalBusiness::stopAllConns(bool isTcp) {
             if (_conns_ws.at(i) != nullptr) {
                 auto c = _conns_ws.at(i);
                 _conns_ws.erase(_conns_ws.begin() + i);
-                LOG(WARNING) << "从ws数组踢出客户端:" << c->_name;
+                LogHelper::Instance()->BizLog(spdlog::level::warn, "从ws数组踢出客户端:{}", c->_name);
             }
         }
     }
@@ -296,7 +297,7 @@ void LocalBusiness::kickoff(uint64_t timeout, uint64_t now, CLIType clientType) 
                 auto conn = _conns.at(i);
                 if (conn != nullptr) {
                     if (abs((long long) now - (long long) conn->timeRecv) > timeout) {
-                        LOG(WARNING) << "接收超时,主动断开客户端:" << conn->_name;
+                        LogHelper::Instance()->BizLog(spdlog::level::warn, "接收超时,主动断开客户端:{}", conn->_name);
                         _conns.erase(_conns.begin() + i);
                     }
                 }
@@ -311,7 +312,7 @@ void LocalBusiness::kickoff(uint64_t timeout, uint64_t now, CLIType clientType) 
                 auto conn = _conns_ws.at(i);
                 if (conn != nullptr) {
                     if (abs((long long) now - (long long) conn->timeRecv) > timeout) {
-                        LOG(WARNING) << "接收超时,主动断开客户端:" << conn->_name;
+                        LogHelper::Instance()->BizLog(spdlog::level::warn, "接收超时,主动断开客户端:{}", conn->_name);
                         _conns_ws.erase(_conns_ws.begin() + i);
                     }
                 }
@@ -334,51 +335,53 @@ void LocalBusiness::StopTimerTaskAll() {
 
 void LocalBusiness::ShowInfo() {
     //local tcp
-    LOG(WARNING) << "local tcp info";
+    LogHelper::Instance()->BizLog(spdlog::level::warn, "local tcp info");
     if (serverList.empty()) {
-        LOG(WARNING) << "no local server start";
+        LogHelper::Instance()->BizLog(spdlog::level::warn, "no local server start");
     } else {
         for (const auto &s: serverList) {
-            LOG(WARNING) << "local server: " << s.first << "---" << "---127.0.0.1:" << s.second->_port;
+            LogHelper::Instance()->BizLog(spdlog::level::warn, "local server: {}------127.0.0.1:{}",
+                                          s.first, s.second->_port);
             if (_conns.empty()) {
-                LOG(WARNING) << "no remote client connect";
+                LogHelper::Instance()->BizLog(spdlog::level::warn, "no remote client connect");
             } else {
                 std::unique_lock<std::mutex> lock(mtx);
                 for (const auto &c: _conns) {
-                    LOG(WARNING) << "remote client: " << c->_name;
+                    LogHelper::Instance()->BizLog(spdlog::level::warn, "remote client: {}", c->_name);
                 }
             }
         }
         if (clientList.empty()) {
-            LOG(WARNING) << "no local client start";
+            LogHelper::Instance()->BizLog(spdlog::level::warn, "no local client start");
         } else {
             for (const auto &c: clientList) {
-                LOG(WARNING) << "local client: " << c.first << "---" << c.second->_name;
+                LogHelper::Instance()->BizLog(spdlog::level::warn, "local client: {}---{}", c.first, c.second->_name);
             }
         }
 
         //local ws
-        LOG(WARNING) << "local ws info";
+        LogHelper::Instance()->BizLog(spdlog::level::warn, "local ws info");
         if (wsServerList.empty()) {
-            LOG(WARNING) << "no local ws server start";
+            LogHelper::Instance()->BizLog(spdlog::level::warn, "no local ws server start");
         } else {
             for (const auto &s: wsServerList) {
-                LOG(WARNING) << "local ws server: " << s.first << "---127.0.0.1:" << s.second->_port;
+                LogHelper::Instance()->BizLog(spdlog::level::warn, "local ws server: {}---127.0.0.1:{}",
+                                              s.first, s.second->_port);
                 if (_conns_ws.empty()) {
-                    LOG(WARNING) << "no remote ws client connect";
+                    LogHelper::Instance()->BizLog(spdlog::level::warn, "no remote ws client connect");
                 } else {
                     std::unique_lock<std::mutex> lock(mtx_ws);
                     for (auto c: _conns_ws) {
-                        LOG(WARNING) << "remote client: " << c->_name;
+                        LogHelper::Instance()->BizLog(spdlog::level::warn, "remote client: {}", c->_name);
                     }
                 }
             }
         }
         if (wsClientList.empty()) {
-            LOG(WARNING) << "no local ws client start";
+            LogHelper::Instance()->BizLog(spdlog::level::warn, "no local ws client start");
         } else {
             for (const auto &c: wsClientList) {
-                LOG(WARNING) << "local ws client: " << c.first << "---" << c.second->_name;
+                LogHelper::Instance()->BizLog(spdlog::level::warn, "local ws client: {}---{}", c.first, c.second->_name);
             }
         }
     }
@@ -399,9 +402,9 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
             if (!s->isListen) {
                 s->ReOpen();
                 if (s->isListen) {
-                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port << " 重启";
+                    LogHelper::Instance()->BizLog(spdlog::level::warn, "服务端:{} port:{} 重启", iter.first, s->_port);
                 } else {
-                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port << " 重启失败";
+                    LogHelper::Instance()->BizLog(spdlog::level::warn, "服务端:{} port:{} 重启失败", iter.first, s->_port);
                 }
             }
         }
@@ -411,9 +414,9 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
             if (!s->isListen) {
                 s->ReOpen();
                 if (s->isListen) {
-                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port << " 重启";
+                    LogHelper::Instance()->BizLog(spdlog::level::warn, "服务端:{} port:{} 重启", iter.first, s->_port);
                 } else {
-                    LOG(WARNING) << "服务端:" << iter.first << " port:" << s->_port << " 重启失败";
+                    LogHelper::Instance()->BizLog(spdlog::level::warn, "服务端:{} port:{} 重启失败", iter.first, s->_port);
                 }
             }
         }
@@ -423,9 +426,11 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
             if (c->isNeedReconnect) {
                 c->Reconnect();
                 if (!c->isNeedReconnect) {
-                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port << " 重启";
+                    LogHelper::Instance()->BizLog(spdlog::level::warn, "客户端:{} {}_{} 重启",
+                                                  iter.first, c->server_ip, c->server_port);
                 } else {
-                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port << " 重启失败";
+                    LogHelper::Instance()->BizLog(spdlog::level::warn, "客户端:{} {}_{} 重启失败",
+                                                  iter.first, c->server_ip, c->server_port);
                 }
             }
         }
@@ -435,9 +440,11 @@ void LocalBusiness::Task_Keep(Poco::Timer &timer) {
             if (c->isNeedReconnect) {
                 c->Reconnect();
                 if (!c->isNeedReconnect) {
-                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port << " 重启";
+                    LogHelper::Instance()->BizLog(spdlog::level::warn, "客户端:{} {}_{} 重启",
+                                                  iter.first, c->server_ip, c->server_port);
                 } else {
-                    LOG(WARNING) << "客户端:" << iter.first << " " << c->server_ip << "_" << c->server_port << " 重启失败";
+                    LogHelper::Instance()->BizLog(spdlog::level::warn, "客户端:{} {}_{} 重启失败",
+                                                  iter.first, c->server_ip, c->server_port);
                 }
             }
         }

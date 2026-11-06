@@ -15,7 +15,7 @@
 #include "Poco/Net/NetException.h"
 #include <Poco/Exception.h>
 #include "Poco/Observer.h"
-#include <glog/logging.h>
+#include "logHelper/LogHelper.h"
 
 using Poco::Net::SocketReactor;
 using Poco::Net::SocketConnector;

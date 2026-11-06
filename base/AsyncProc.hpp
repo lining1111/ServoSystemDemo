@@ -9,7 +9,7 @@
 #endif
 
 
-#include <glog/logging.h>
+#include "logHelper/LogHelper.h"
 #include "base/fsm/FSM.h"
 #include <thread>
 #include <vector>
@@ -59,12 +59,12 @@ public:
     virtual ~AsyncProc() {
         delete _fsm;
         delete mtx;
-        LOG(WARNING) << _name << " release";
+        LogHelper::Instance()->BizLog(spdlog::level::warn, "{} release", _name);
     }
 
     virtual void startBusiness() {
         _isRun = true;
-        LOG(WARNING) << _name << " start business";
+        LogHelper::Instance()->BizLog(spdlog::level::warn, "{} start business", _name);
         t_stateMachine = std::thread(ThreadStateMachine, this);
     }
 
@@ -76,7 +76,7 @@ public:
             t_stateMachine.join();
         }
 
-        LOG(WARNING) << _name << " stop business";
+        LogHelper::Instance()->BizLog(spdlog::level::warn, "{} stop business", _name);
     }
 
     virtual void Action() = 0;
@@ -84,7 +84,7 @@ public:
     // static int ThreadStateMachine(AsyncProc *local);//子类也要实现
 private:
     static int ThreadStateMachine(AsyncProc *local) {
-        LOG(WARNING) << local->_name << " " << __FUNCTION__ << " start";
+        LogHelper::Instance()->BizLog(spdlog::level::warn, "{} {} start", local->_name, __FUNCTION__);
         local->_pkgCache.clear();
         while (local->_isRun) {
             if (local->_fsm->WaitTriggerAction()) {
@@ -93,7 +93,7 @@ private:
                 }
             }
         }
-        LOG(WARNING) << local->_name << " " << __FUNCTION__ << " stop";
+        LogHelper::Instance()->BizLog(spdlog::level::warn, "{} {} stop", local->_name, __FUNCTION__);
         return 0;
     }
 };

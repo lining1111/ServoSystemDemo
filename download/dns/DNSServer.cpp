@@ -26,7 +26,7 @@
 #endif
 
 #include <vector>
-#include <glog/logging.h>
+#include "logHelper/LogHelper.h"
 #include <mutex>
 #include <thread>
 
@@ -135,11 +135,12 @@ C0  0C  域名 当报文中域名重复出现的时候，该字段使用2个字�
                             p_dns_head->data_buf[3]);
                     dns_ip_str_all.push_back(tmp_ip_buf);
                 } else {
-                    LOG(ERROR) << "数据长度错误" << *(unsigned short *) p_dns_head->data_len;
+                    LogHelper::Instance()->HttpLog(spdlog::level::err, "数据长度错误{}",
+                                                   *(unsigned short *) p_dns_head->data_len);
                 }
             }
         }
-        LOG(ERROR) << "接收数据:" << printf_buf;
+        LogHelper::Instance()->HttpLog(spdlog::level::err, "接收数据:{}", printf_buf);
         return 0;
     }
 
@@ -149,12 +150,12 @@ C0  0C  域名 当报文中域名重复出现的时候，该字段使用2个字�
 
         DNS_REQ_HEAD *p_dns_head = (DNS_REQ_HEAD *) dns_buf;
         if (*(unsigned short *) p_dns_head->id != 0x0001) {
-            LOG(ERROR) << "dns解析错误" << *(unsigned short *) p_dns_head->id;
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "dns解析错误{}", *(unsigned short *) p_dns_head->id);
             return -1;
         }
 
         if (*(unsigned short *) p_dns_head->flag != 0x8081) {
-            LOG(ERROR) << "dns解析错误" << *(unsigned short *) p_dns_head->flag;
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "dns解析错误{}", *(unsigned short *) p_dns_head->flag);
             return -1;
         }
 
@@ -168,14 +169,14 @@ C0  0C  域名 当报文中域名重复出现的时候，该字段使用2个字�
         /*头部信息解析*/
         ret = dns_head_parse(dns_buf, dns_buf_len);
         if (ret < 0) {
-            LOG(ERROR) << "dns解析失败";
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "dns解析失败");
             return -1;
         }
 
         /*dns内容信息解析*/
         ret = dns_data_parse(dns_buf, dns_buf_len, dns_ip_str_all);
         if (ret < 0) {
-            LOG(ERROR) << "dns内容信息解析失败";
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "dns内容信息解析失败");
             return -1;
         }
 
@@ -193,7 +194,8 @@ C0  0C  域名 当报文中域名重复出现的时候，该字段使用2个字�
 #define SRV_PORT 53
 
         if (NULL == host_name || NULL == host_ip) {
-            LOG(ERROR) << "dns_resolve_114 host_name=" << host_name << " host_ip=" << host_ip;
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "dns_resolve_114 host_name={} host_ip={}",
+                                           host_name, host_ip);
             return -1;
         }
 
@@ -223,7 +225,7 @@ C0  0C  域名 当报文中域名重复出现的时候，该字段使用2个字�
         timeval tv = {5, 0};
 
         if ((clifd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-            LOG(ERROR) << "dns_resolve_114 create socket error!";
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "dns_resolve_114 create socket error!");
             return -1;
         }
         setsockopt(clifd, SOL_SOCKET, SO_RCVTIMEO, (char *) &tv, sizeof(timeval));
@@ -267,11 +269,11 @@ C0  0C  域名 当报文中域名重复出现的时候，该字段使用2个字�
         closesocket(clifd);
 #endif
         if (len < 0) {
-            LOG(ERROR) << "dns_resolve_114 recv error";
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "dns_resolve_114 recv error");
             return -1;
         }
         if (dnshdr->numa == 0) {
-            LOG(ERROR) << "dns_resolve_114 ack error";
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "dns_resolve_114 ack error");
             return -1;
         }
         ptr = buf + len - 4;
@@ -281,12 +283,12 @@ C0  0C  域名 当报文中域名重复出现的时候，该字段使用2个字�
         dns_parse(buf, len, dns_ip_str_all);
 
         if (dns_ip_str_all.size() == 0) {
-            LOG(ERROR) << "dns_resolve_114 dns_parse error";
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "dns_resolve_114 dns_parse error");
             return -1;
         }
 
         for (int i = 0; i < (int) dns_ip_str_all.size(); i++) {
-            LOG(INFO) << "host" << host_name << "解析dns:" << dns_ip_str_all[i].c_str();
+            LogHelper::Instance()->HttpLog(spdlog::level::info, "host{}解析dns:{}", host_name, dns_ip_str_all[i]);
         }
 
         //sprintf(host_ip,"%u.%u.%u.%u",(unsigned char)*ptr, (unsigned char)*(ptr + 1), (unsigned char)*(ptr + 2), (unsigned char)*(ptr + 3));
@@ -338,7 +340,7 @@ ret = 0 成功
         /*取得主机IP地址*/
         phost = gethostbyname(hoststr.c_str());
         if (phost!= nullptr) {
-            LOG(ERROR) << "gethostbyname_r " << hoststr << " ret:" << ret;
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "gethostbyname_r {} ret:{}", hoststr, ret);
             int i;
             int size = sizeof(dnsserver) / 64;
 
@@ -346,17 +348,18 @@ ret = 0 成功
                 ret = dns_resolve_114(dnsserver[i], (char *) hoststr.c_str(),
                                       tmpipaddr);
                 if (ret < 0) {
-                    LOG(ERROR) << "dns_resolve_114 通过" << dnsserver[i] << "获取ip地址失败";
+                    LogHelper::Instance()->HttpLog(spdlog::level::err, "dns_resolve_114 通过{}获取ip地址失败",
+                                                   dnsserver[i]);
                     continue;
                 }
                 ipaddr = tmpipaddr;
                 return 0;
             }
-            LOG(ERROR) << "http  dns未查找到" << hoststr << "域名的ip";
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "http  dns未查找到{}域名的ip", hoststr);
             return -1;
         }
         if (phost == nullptr) {
-            LOG(ERROR) << "dns_resolve_114 通过114.114.114.114获取ip地址失败";
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "dns_resolve_114 通过114.114.114.114获取ip地址失败");
             return -1;
         }
 
@@ -386,7 +389,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
                 //DBG("更新dns[%s:%s]",iter->first,iter->second);
                 ret = url_get(iter->first, ipaddr);
                 if (ret < 0) {
-                    LOG(ERROR) << "获取ip地址失败";
+                    LogHelper::Instance()->HttpLog(spdlog::level::err, "获取ip地址失败");
                 }
                 if (strlen(ipaddr.c_str()) > 0) {
                     iter->second = ipaddr;
@@ -397,14 +400,14 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
         }
 
         if (url.length() == 0) {
-            LOG(ERROR) << "查询dns错误,url值为空";
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "查询dns错误,url值为空");
             return -1;
         }
         url_ip = url;
         //DBG("查询URL:%s",(char *)url.c_str());
         struct ast_uri *uri_s = ast_uri_parse((char *) url.c_str());
         if (uri_s->host == NULL) {
-            LOG(ERROR) << "查询dns错误,url:" << url;
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "查询dns错误,url:{}", url);
             return -1;
         }
         hoststr = uri_s->host;
@@ -418,7 +421,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
 
         //DBG("host:%s",(char *)hoststr.c_str());
         if (isIP((char *) host.c_str()) == 1) {
-            LOG(ERROR) << "url:" << url << "的host地址是IP不进行解析";
+            LogHelper::Instance()->HttpLog(spdlog::level::err, "url:{}的host地址是IP不进行解析", url);
             return -1;
         }
         mutex_dns.lock();
@@ -430,7 +433,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
                 if (tmpit == dns_table.end()) {
                     ret = url_get(hoststr, ipaddr);
                     if (ret < 0) {
-                        LOG(ERROR) << "获取ip地址失败";
+                        LogHelper::Instance()->HttpLog(spdlog::level::err, "获取ip地址失败");
                         mutex_dns.unlock();
                         return -1;
                     }
@@ -445,7 +448,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
                 //DBG("强制获取dns");
                 ret = url_get(hoststr, ipaddr);
                 if (ret < 0) {
-                    LOG(ERROR) << "获取ip地址失败";
+                    LogHelper::Instance()->HttpLog(spdlog::level::err, "获取ip地址失败");
                     mutex_dns.unlock();
                     return -1;
                 }
@@ -458,7 +461,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
                 if (tmpit == dns_table.end()) {
                     ret = url_get(hoststr, ipaddr);
                     if (ret < 0) {
-                        LOG(ERROR) << "获取ip地址失败";
+                        LogHelper::Instance()->HttpLog(spdlog::level::err, "获取ip地址失败");
                         mutex_dns.unlock();
                         return -1;
                     }
@@ -494,7 +497,7 @@ force:强制解析域名 0,不强制获取，1 强制获取 2,更新dns
         auto t = thread(&dns_server_task, nullptr);
         t.detach();
 
-        LOG(INFO) << "Create dns_server_start() succeed";
+        LogHelper::Instance()->HttpLog(spdlog::level::info, "Create dns_server_start() succeed");
         return 0;
     }
 }

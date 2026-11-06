@@ -10,7 +10,7 @@
 #include "common.h"
 #include "config/config.h"
 #include "localBusiness/localBusiness.h"
-#include <glog/logging.h>
+#include "logHelper/LogHelper.h"
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 #include "utils/utils.h"
@@ -36,8 +36,9 @@ void CacheTimestamp::update(int index, uint64_t timestamp, int caches) {
                     dataTimestamps.push_back(timestamp);
                 } else {
                     if (timestamp <= dataTimestamps.back()) {
-                        LOG(ERROR) << "当前插入时间戳 " << timestamp << " 小于已插入的最新时间戳 "
-                                << dataTimestamps.back() << "，将恢复到最初状态";
+                        LogHelper::Instance()->BizLog(spdlog::level::err,
+                                                      "当前插入时间戳 {} 小于已插入的最新时间戳 {}，将恢复到最初状态",
+                                                      timestamp, dataTimestamps.back());
                         dataTimestamps.clear();
                         dataIndex = -1;
                     } else {
@@ -49,7 +50,8 @@ void CacheTimestamp::update(int index, uint64_t timestamp, int caches) {
         }
         //After the cache frame is full, calculate the frame rate and set the flag.
         if (dataTimestamps.size() == caches) {
-            LOG(WARNING) << "动态帧率原始时间戳队列:" << fmt::format("{}", dataTimestamps);
+            LogHelper::Instance()->BizLog(spdlog::level::warn, "动态帧率原始时间戳队列:{}",
+                                          fmt::format("{}", dataTimestamps));
             std::vector<uint64_t> intervals;
             for (int i = 1; i < dataTimestamps.size(); i++) {
                 auto cha = dataTimestamps.at(i) - dataTimestamps.at(i - 1);
@@ -84,7 +86,8 @@ namespace common {
 
         // 统一处理入口
         std::string Process(const std::string &code, const std::string &guid, const std::string &req_json) {
-            LOG(INFO) << "Process code: " << code << ", guid: " << guid << ", req_json: " << req_json;
+            LogHelper::Instance()->BizLog(spdlog::level::info, "Process code: {}, guid: {}, req_json: {}",
+                                          code, guid, req_json);
             TReq req;
             // 1. 请求解码 —— 失败直接返回错误回复
             try {

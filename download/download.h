@@ -5,12 +5,17 @@
 #ifndef DOWNLOAD_H
 #define DOWNLOAD_H
 
-#include <glog/logging.h>
+#include "logHelper/LogHelper.h"
 #include <fstream>
 #include <iomanip>
 #include <openssl/md5.h>
 #include <curl/curl.h>
 #include <fcntl.h>
+#ifdef WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 #include "dns/DNSServer.h"
 //#include "os/os.h"
 

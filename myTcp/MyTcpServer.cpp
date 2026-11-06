@@ -2,18 +2,19 @@
 // Created by lining on 10/24/24.
 //
 #include "MyTcpServer.h"
+#include "logHelper/LogHelper.h"
 #include "localBusiness/localBusiness.h"
 
 MyTcpServerHandler::MyTcpServerHandler(const StreamSocket &socket) : TCPServerConnection(socket) {
     socket_ = socket;
     _name = socket.peerAddress().toString();
-    LOG(WARNING) << "connection from " << _name;
+    LogHelper::Instance()->TcpLog(spdlog::level::warn, "connection from {}", _name);
     recvBuf = new char[1024 * 1024];
     CommonHandler::startBusiness();
 }
 
 MyTcpServerHandler::~MyTcpServerHandler() {
-    LOG(WARNING) << _name << " disconnected";
+    LogHelper::Instance()->TcpLog(spdlog::level::warn, "{} disconnected", _name);
     CommonHandler::stopBusiness();
     socket_.close();
     delete[] recvBuf;
@@ -32,7 +33,7 @@ void MyTcpServerHandler::run() {
             _fsm->TriggerAction(recvBuf, len);
         } while (len > 0);
     } catch (Poco::Exception &e) {
-        LOG(WARNING) << e.displayText();
+        LogHelper::Instance()->TcpLog(spdlog::level::warn, "{}", e.displayText());
     }
     localBusiness->delConn(_name);
     //!!!Here, do not delete this because Poco will enter the destructor.
@@ -47,14 +48,14 @@ MyTcpServer::~MyTcpServer() {
         srv->stop();
         delete srv;
     }
-    LOG(WARNING) << "tcp server:" << to_string(_port) << " close";
+    LogHelper::Instance()->TcpLog(spdlog::level::warn, "tcp server:{} close", _port);
 }
 
 int MyTcpServer::Open() {
     try {
         srv = new Poco::Net::TCPServer(new MyTcpConnectionFactory, ServerSocket(_port));
     } catch (Poco::Exception &e) {
-        LOG(ERROR) << "tcp server err:" << e.displayText();
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "tcp server err:{}", e.displayText());
         return -1;
     }
     srv->start();
@@ -66,7 +67,7 @@ int MyTcpServer::ReOpen() {
     try {
         srv = new Poco::Net::TCPServer(new MyTcpConnectionFactory, ServerSocket(_port));
     } catch (Poco::Exception &e) {
-        LOG(ERROR) << "tcp server err:" << e.displayText();
+        LogHelper::Instance()->TcpLog(spdlog::level::err, "tcp server err:{}", e.displayText());
         return -1;
     }
     srv->start();
