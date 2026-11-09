@@ -5,6 +5,7 @@
 #ifndef LOGHELPER_H
 #define LOGHELPER_H
 
+#include <map>
 #include <memory>
 #include <string>
 
@@ -34,11 +35,18 @@ public:
 
 private:
     std::string m_logPath;
-    std::shared_ptr<spdlog::logger> console_logger_;
-    std::shared_ptr<spdlog::logger> biz_logger_;
-    std::shared_ptr<spdlog::logger> tcp_logger_;
-    std::shared_ptr<spdlog::logger> ws_logger_;
-    std::shared_ptr<spdlog::logger> http_logger_;
+    //logger 集合，key：console / biz / tcp / ws / http
+    //biz / tcp / ws / http 分别写 biz.log / tcp.log / ws.log / http.log，isSendSTDOUT 时同步输出到控制台
+    std::map<std::string, std::shared_ptr<spdlog::logger>> loggers_;
+
+    //按名称取 logger，不存在（未调用 Init 或名称错误）时返回 nullptr
+    std::shared_ptr<spdlog::logger> GetLogger(const std::string &name) const {
+        auto iter = loggers_.find(name);
+        if (iter == loggers_.end()) {
+            return nullptr;
+        }
+        return iter->second;
+    }
 
     // 统一写日志：level 为日志等级，fmt 为 fmt 风格格式串，args 为格式化参数
     // 注意：格式串需为编译期常量；若格式串来自运行时拼接，调用处用 fmt::runtime(str) 包裹
@@ -72,18 +80,27 @@ public:
      */
     template<typename... Args>
     void ConsoleLog(spdlog::level::level_enum level, FmtString<Args...> fmt, Args &&... args) {
-        WriteLog(console_logger_, level, fmt, std::forward<Args>(args)...);
+        Log("console", level, fmt, std::forward<Args>(args)...);
     }
 
     /**
-     * 业务日志，写 biz.log
+     * 通用日志，按名称写入对应 logger
+     * @param name logger 名：console / biz / tcp / ws / http
      * @param level 日志等级，如 spdlog::level::info
      * @param fmt 格式串，如 "recv cmd: {}, value: {}"
      * @param args 若干可变参数
      */
     template<typename... Args>
+    void Log(const std::string &name, spdlog::level::level_enum level, FmtString<Args...> fmt, Args &&... args) {
+        WriteLog(GetLogger(name), level, fmt, std::forward<Args>(args)...);
+    }
+
+    /**
+     * 业务日志，写 biz.log
+     */
+    template<typename... Args>
     void BizLog(spdlog::level::level_enum level, FmtString<Args...> fmt, Args &&... args) {
-        WriteLog(biz_logger_, level, fmt, std::forward<Args>(args)...);
+        Log("biz", level, fmt, std::forward<Args>(args)...);
     }
 
     /**
@@ -91,7 +108,7 @@ public:
      */
     template<typename... Args>
     void TcpLog(spdlog::level::level_enum level, FmtString<Args...> fmt, Args &&... args) {
-        WriteLog(tcp_logger_, level, fmt, std::forward<Args>(args)...);
+        Log("tcp", level, fmt, std::forward<Args>(args)...);
     }
 
     /**
@@ -99,7 +116,7 @@ public:
      */
     template<typename... Args>
     void WsLog(spdlog::level::level_enum level, FmtString<Args...> fmt, Args &&... args) {
-        WriteLog(ws_logger_, level, fmt, std::forward<Args>(args)...);
+        Log("ws", level, fmt, std::forward<Args>(args)...);
     }
 
     /**
@@ -107,7 +124,7 @@ public:
      */
     template<typename... Args>
     void HttpLog(spdlog::level::level_enum level, FmtString<Args...> fmt, Args &&... args) {
-        WriteLog(http_logger_, level, fmt, std::forward<Args>(args)...);
+        Log("http", level, fmt, std::forward<Args>(args)...);
     }
 };
 
