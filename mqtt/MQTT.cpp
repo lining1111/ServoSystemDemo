@@ -5,6 +5,8 @@
 #include "MQTT.h"
 
 MQTT::MQTT(Config config) : _config(config) {
+    //获取 mqtt 模块日志 handler
+    log_ = LogHelper::Instance()->GetLogger("mqtt");
 }
 
 MQTT::~MQTT() {
@@ -18,7 +20,8 @@ mqtt::async_client *MQTT::newClient(Config config) {
 }
 
 void MQTT::init(int cacheSize) {
-    _chan = new Chan<std::string>(cacheSize);
+    //Chan 以 clientID 作为名称，便于监控时区分来源
+    _chan = new Chan<std::string>(cacheSize, _config.clientID);
     _client = newClient(_config);
     _connectOptions.set_clean_session(true);
     _connectOptions.set_keep_alive_interval(20);
@@ -26,12 +29,12 @@ void MQTT::init(int cacheSize) {
     _connectOptions.set_user_name(_config.username);
     _connectOptions.set_password(_config.password);
     _client->set_connected_handler([this](const string &cause) {
-        std::cout << "mqtt connect:" << cause << std::endl;
+        LOG_TO(log_, spdlog::level::warn, "mqtt connect:{}", cause);
         isConnected = true;
         _client->subscribe(_config.topicSub, _config.qos);
     });
     _client->set_connection_lost_handler([this](const string &cause) {
-        std::cout << "mqtt disconnect" << std::endl;
+        LOG_TO(log_, spdlog::level::err, "mqtt disconnect:{}", cause);
         isConnected = false;
     });
 
@@ -45,7 +48,7 @@ void MQTT::connect() {
         _client->connect(_connectOptions)->wait();
         _client->start_consuming();
     } catch (const mqtt::exception &exc) {
-        std::cerr << " first connect Error(ignore can be ok): " << exc.what() << std::endl;
+        LOG_TO(log_, spdlog::level::err, "first connect Error(ignore can be ok): {}", exc.what());
     }
 }
 
@@ -53,10 +56,11 @@ bool MQTT::Pub(const std::string &msg) {
     if (this->_client == nullptr) {
         return false;
     }
-    if (isConnected) {
+    //未连接时不能发布
+    if (!isConnected) {
         return false;
     }
 
     auto token = _client->publish(_config.topicPub, msg);
-    token->wait_for(std::chrono::seconds(10));
+    return token->wait_for(std::chrono::seconds(10));
 }

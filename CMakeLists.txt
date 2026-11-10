@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(ServoSystemDemo VERSION 0.3.0)
+project(ServoSystemDemo VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -111,11 +111,38 @@ message(STATUS "SRC_DIRS:${SRC_DIRS}")
 foreach (src_dir ${SRC_DIRS})
     aux_source_directory(${src_dir} SRC_FILES)
 endforeach (src_dir)
+# 剔除主程序入口 main.cpp 和 _test.cpp 测试文件（如 common/com_test.cpp），测试由 test 子目录单独编译
 list(REMOVE_ITEM SRC_FILES ./main.cpp)
+list(FILTER SRC_FILES EXCLUDE REGEX "_test\\.cpp$")
 
 add_executable(ServoSystemDemo main.cpp ${SRC_FILES})
 
 target_link_libraries(ServoSystemDemo ${LIBS})
 redefine_file_macro(ServoSystemDemo)
 
-add_subdirectory(test)
+
+##test
+
+add_executable(test_com common/com_test.cpp
+        utils/utils.cpp)
+target_link_libraries(test_com ${LIBS})
+
+add_executable(test_websocketServer websocket/server_test.cpp
+        ${SRC_FILES})
+target_link_libraries(test_websocketServer ${LIBS})
+
+add_executable(test_websocketClient websocket/client_test.cpp
+        ${SRC_FILES})
+target_link_libraries(test_websocketClient ${LIBS})
+
+add_executable(test_chan utils/chan_test.cpp
+        ${SRC_FILES})
+target_link_libraries(test_chan ${LIBS})
+
+add_executable(test_mqtt mqtt/mqtt_test.cpp
+        ${SRC_FILES})
+target_link_libraries(test_mqtt ${LIBS})
+
+add_executable(test_romfs romfs/romfs_test.cpp)
+target_link_libraries(test_romfs incbin::incbin tomlplusplus::tomlplusplus)
+

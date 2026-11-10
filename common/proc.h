@@ -35,6 +35,10 @@ namespace common {
     using HandleFun = std::function<std::string(const std::string &msgType, const std::string &guid, const std::string &req_json)>;
 
     extern map<vector<string>, HandleFun> HandleRouter;
+
+    //完整报文处理：分包后的报文(不含包尾'*')路由到 HandleRouter，返回应答报文(不含包尾'*')
+    //作为 tcp::Server / tcp::Client / websocket::Server / websocket::Client 的报文处理回调使用
+    std::string ProcessPkg(const std::string &pkg);
 }
 
 

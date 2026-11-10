@@ -34,7 +34,7 @@ std::string getFileMD5(std::string file) {
 
         return ret;
     } else {
-        LogHelper::Instance()->HttpLog(spdlog::level::err, "file not open");
+        HTTP_LOG(spdlog::level::err, "file not open");
         return "";
     }
 }
@@ -75,7 +75,7 @@ static size_t download_file_callback(void *buffer, size_t size, size_t nmemb, vo
     for (int i = 0; i < countDownloadPrint; i++) {
         printPrefix.append("#");
     }
-    LogHelper::Instance()->HttpLog(spdlog::level::info, "...download:{},total:{}", downloaded, downloadTotal);
+    HTTP_LOG(spdlog::level::info, "...download:{},total:{}", downloaded, downloadTotal);
     return writen(*(int *) userp, buffer, nmemb * size);
 }
 
@@ -93,7 +93,7 @@ static size_t download_file_callback(void *buffer, size_t size, size_t nmemb, vo
  * -3：local disk space not enough
  */
 int downloadFile(std::string url, int timeout, std::string fileName, int fileSize, std::string fileMD5) {
-    LogHelper::Instance()->HttpLog(spdlog::level::info, "downloadFile,url:{},timeout:{}file name:{},size:{},md5:{}",
+    HTTP_LOG(spdlog::level::info, "downloadFile,url:{},timeout:{}file name:{},size:{},md5:{}",
                                    url, timeout, fileName, fileSize, fileMD5);
 
     int ret = 0;
@@ -105,7 +105,7 @@ int downloadFile(std::string url, int timeout, std::string fileName, int fileSiz
 
     int fd = open(fileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if (fd <= 0) {
-        LogHelper::Instance()->HttpLog(spdlog::level::err, "create file fail:{}", fileName);
+        HTTP_LOG(spdlog::level::err, "create file fail:{}", fileName);
         return -3;
     }
     std::string ipurl;
@@ -113,7 +113,7 @@ int downloadFile(std::string url, int timeout, std::string fileName, int fileSiz
     myDNS::searchDNS(url, ipurl, 0, host, port, ipaddr);
     host = "Host:" + host;
     port = "Port:" + port;
-    LogHelper::Instance()->HttpLog(spdlog::level::info, "download {},{}", host, port);
+    HTTP_LOG(spdlog::level::info, "download {},{}", host, port);
     headerlist = curl_slist_append(headerlist, "Expect:");
     //headerlist = curl_slist_append(headerlist, "Accept: application/json");
     headerlist = curl_slist_append(headerlist, host.c_str());
@@ -140,27 +140,27 @@ int downloadFile(std::string url, int timeout, std::string fileName, int fileSiz
         res = curl_easy_perform(curl);
         long http_response_code = 0;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_response_code);
-        LogHelper::Instance()->HttpLog(spdlog::level::info, "res:{},resp code:{}", (int) res, http_response_code);
+        HTTP_LOG(spdlog::level::info, "res:{},resp code:{}", (int) res, http_response_code);
 
         if (res == CURLE_OK && http_response_code == 200) {
             //请求成功
-            LogHelper::Instance()->HttpLog(spdlog::level::info, "download file:{},from url:{} success", fileName, url);
+            HTTP_LOG(spdlog::level::info, "download file:{},from url:{} success", fileName, url);
             ret = 0;
             std::string md5 = getFileMD5(fileName);
             if (md5 != fileMD5) {
-                LogHelper::Instance()->HttpLog(spdlog::level::err, "md5 check fail, cal:{},{}", md5, fileMD5);
+                HTTP_LOG(spdlog::level::err, "md5 check fail, cal:{},{}", md5, fileMD5);
                 ret = -4;
             }
         } else if (res == CURLE_OPERATION_TIMEDOUT) {
-            LogHelper::Instance()->HttpLog(spdlog::level::info, "download file:{},{},fail,err:{}",
+            HTTP_LOG(spdlog::level::info, "download file:{},{},fail,err:{}",
                                            url, fileName, curl_easy_strerror(res));
             ret = -2;
         } else if (res == CURLE_WRITE_ERROR) {
-            LogHelper::Instance()->HttpLog(spdlog::level::info, "download file:{},{},fail,err:{}",
+            HTTP_LOG(spdlog::level::info, "download file:{},{},fail,err:{}",
                                            url, fileName, curl_easy_strerror(res));
             ret = -3;
         } else {
-            LogHelper::Instance()->HttpLog(spdlog::level::info, "download file:{},{},fail,err:{}",
+            HTTP_LOG(spdlog::level::info, "download file:{},{},fail,err:{}",
                                            url, fileName, curl_easy_strerror(res));
             ret = -1;
         }
@@ -174,43 +174,43 @@ int downloadFile(std::string url, int timeout, std::string fileName, int fileSiz
 
 //int extractFile(std::string filePath) {
 //    int ret = 0;
-//    LogHelper::Instance()->HttpLog(spdlog::level::info, "开始解压文件到指定目录");
+//    HTTP_LOG(spdlog::level::info, "开始解压文件到指定目录");
 //    char *cmd = new char[512];
 //    memset(cmd, 0, 512);
 //    sprintf(cmd, "rm -rf %s", UPDATEUNZIPFILE);
-//    LogHelper::Instance()->HttpLog(spdlog::level::info, "删除临时目录,cmd={}", cmd);
+//    HTTP_LOG(spdlog::level::info, "删除临时目录,cmd={}", cmd);
 //    ret = os::runCmd(cmd);
 //    if (ret < 0) {
-//        LogHelper::Instance()->HttpLog(spdlog::level::err, "exec cmd err{}", cmd);
+//        HTTP_LOG(spdlog::level::err, "exec cmd err{}", cmd);
 //        delete[] cmd;
 //        return -1;
 //    }
 //    memset(cmd, 0, 512);
 //    sprintf(cmd, "mkdir -p %s", UPDATEUNZIPFILE);
-//    LogHelper::Instance()->HttpLog(spdlog::level::info, "新建临时目录,cmd={}", cmd);
+//    HTTP_LOG(spdlog::level::info, "新建临时目录,cmd={}", cmd);
 //    ret = os::runCmd(cmd);
 //    if (ret != 0) {
-//        LogHelper::Instance()->HttpLog(spdlog::level::err, "exec cmd err{}", cmd);
+//        HTTP_LOG(spdlog::level::err, "exec cmd err{}", cmd);
 //        delete[] cmd;
 //        return -1;
 //    }
 //    memset(cmd, 0, 512);
 //    sprintf(cmd, "tar -zxf %s -C %s", filePath.c_str(), UPDATEUNZIPFILE);
-//    LogHelper::Instance()->HttpLog(spdlog::level::info, "解压到指定目录,cmd={}", cmd);
+//    HTTP_LOG(spdlog::level::info, "解压到指定目录,cmd={}", cmd);
 //    ret = os::runCmd(cmd);
 //    if (ret < 0) {
-//        LogHelper::Instance()->HttpLog(spdlog::level::err, "exec cmd err{}", cmd);
+//        HTTP_LOG(spdlog::level::err, "exec cmd err{}", cmd);
 //        delete[] cmd;
 //        return -1;
 //    }
-//    LogHelper::Instance()->HttpLog(spdlog::level::info, "删除原始压缩文件");
+//    HTTP_LOG(spdlog::level::info, "删除原始压缩文件");
 //    if (remove(filePath.c_str()) != 0) {
-//        LogHelper::Instance()->HttpLog(spdlog::level::err, "remove err:{}", filePath);
+//        HTTP_LOG(spdlog::level::err, "remove err:{}", filePath);
 //        delete[] cmd;
 //        return -1;
 //    }
 //
-//    LogHelper::Instance()->HttpLog(spdlog::level::info, "解压文件成功");
+//    HTTP_LOG(spdlog::level::info, "解压文件成功");
 //    delete[] cmd;
 //    return 0;
 //}
@@ -222,10 +222,10 @@ int downloadFile(std::string url, int timeout, std::string fileName, int fileSiz
 //    char cmd[256] = {0};
 //    memset(cmd, 0, 256);
 //    sprintf(cmd, "chmod +x %s/%s", UPDATEUNZIPFILE, INSTALLSH);
-//    LogHelper::Instance()->HttpLog(spdlog::level::info, "修改权限,cmd={}", cmd);
+//    HTTP_LOG(spdlog::level::info, "修改权限,cmd={}", cmd);
 //    ret = os::runCmd(cmd);
 //    if (ret < 0) {
-//        LogHelper::Instance()->HttpLog(spdlog::level::err, "exec cmd err{}", cmd);
+//        HTTP_LOG(spdlog::level::err, "exec cmd err{}", cmd);
 //        return -1;
 //    }
 //    //获取当前工作目录
@@ -236,12 +236,12 @@ int downloadFile(std::string url, int timeout, std::string fileName, int fileSiz
 //
 //    memset(cmd, 0, 256);
 //    sprintf(cmd, "sh %s/%s %s", UPDATEUNZIPFILE, INSTALLSH, exePath.c_str());
-//    LogHelper::Instance()->HttpLog(spdlog::level::info, "执行脚本,cmd={}", cmd);
+//    HTTP_LOG(spdlog::level::info, "执行脚本,cmd={}", cmd);
 //    ret = os::runCmd(cmd);
 //    if (ret < 0) {
-//        LogHelper::Instance()->HttpLog(spdlog::level::err, "升级失败，exec cmd err{}", cmd);
+//        HTTP_LOG(spdlog::level::err, "升级失败，exec cmd err{}", cmd);
 //        return -1;
 //    }
-//    LogHelper::Instance()->HttpLog(spdlog::level::info, "升级成功");
+//    HTTP_LOG(spdlog::level::info, "升级成功");
 //    return 0;
 //}

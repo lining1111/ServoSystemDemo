@@ -37,14 +37,14 @@ bool LocalConfig::isShowMsgType(const string& msgType) const {
 int LocalConfig::getDeviceConfigFromYAML(const string& path) {
     //判断文件是否存在
     if (!std::ifstream(path)) {
-        LogHelper::Instance()->BizLog(spdlog::level::err, "config file not exist");
+        BIZ_LOG(spdlog::level::err, "config file not exist");
         return -1;
     }
 
     try {
         yaml::decode_file(path, this->_config);
     } catch (exception &e) {
-        LogHelper::Instance()->BizLog(spdlog::level::err, "{}", e.what());
+        BIZ_LOG(spdlog::level::err, "{}", e.what());
         return -1;
     }
 
@@ -53,23 +53,3 @@ int LocalConfig::getDeviceConfigFromYAML(const string& path) {
 }
 
 LocalConfig localConfig;
-
-Device::Device() = default;
-
-Device::~Device() = default;
-
-void Device::Init() {
-    LogHelper::Instance()->BizLog(spdlog::level::warn, "Device init");
-    //TODO device init
-}
-
-void Device::Keep() {
-    //TODO device keep
-}
-
-void Device::Exit() {
-    LogHelper::Instance()->BizLog(spdlog::level::warn, "Device exit");
-   //TODO device exit
-}
-
-Device device;

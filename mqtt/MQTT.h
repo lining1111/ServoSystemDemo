@@ -5,8 +5,10 @@
 #ifndef MQTT_H
 #define MQTT_H
 #include <atomic>
+#include <memory>
 #include <string>
 #include "mqtt/async_client.h"
+#include "logHelper/LogHelper.h"
 #include "utils/Chan.hpp"
 
 using namespace std;
@@ -31,6 +33,8 @@ private:
     bool _isRun = false;
     atomic<bool> isConnected{false};
     Config _config;
+    //模块日志 handler（mqtt.log）
+    std::shared_ptr<spdlog::logger> log_;
 
 public:
     explicit MQTT(Config config);

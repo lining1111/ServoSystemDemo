@@ -38,12 +38,13 @@ public:
     typedef struct Config {
         vector<string> msgType;
         //TCP
-        LocalServerConfig localTcpServerConfig;
-        RemoteServerConfig remoteTcpServerConfig;
+        LocalServerConfig localTcpServer;
+        RemoteServerConfig remoteTcpServer;
         //WS
-        LocalServerConfig localWSServerConfig;
-        RemoteServerConfig remoteWSServerConfig;
-        XPACK(O(msgType, localTcpServerConfig, remoteTcpServerConfig, localWSServerConfig, remoteWSServerConfig));
+        LocalServerConfig localWSServer;
+        RemoteServerConfig remoteWSServer;
+        //字段名与 config.yaml 的 key 保持一致（xpack 按成员名匹配 yaml key，不匹配会静默跳过）
+        XPACK(O(msgType, localTcpServer, remoteTcpServer, localWSServer, remoteWSServer));
     } Config;
 
 public:
@@ -60,22 +61,5 @@ public:
 
 extern LocalConfig localConfig;
 
-class Device {
-public:
-    string g_user; //the user ip address need to reply
-public:
-    Device();
-
-    ~Device();
-
-public:
-    void Init();
-
-    void Keep();
-
-    void Exit();
-};
-
-extern Device device;
 
 #endif //CONFIG_H

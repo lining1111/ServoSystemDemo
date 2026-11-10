@@ -14,8 +14,18 @@ LogHelper *LogHelper::Instance() {
 }
 
 void LogHelper::Init(const std::string &path, bool isSendSTDOUT) {
+    std::lock_guard<std::mutex> lock(initMtx_);
     auto level = spdlog::level::debug;
     m_logPath = path;
+
+    //可重复调用：先刷盘并丢弃上一次的 logger（rotating_file_sink 析构时关闭文件句柄）
+    for (const auto &iter: loggers_) {
+        if (iter.second) {
+            iter.second->flush();
+        }
+    }
+    loggers_.clear();
+
     //控制台 sink：不输出到控制台时直接关闭，即使被文件 logger 挂载也不会输出
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(isSendSTDOUT ? level : spdlog::level::off);
@@ -36,10 +46,26 @@ void LogHelper::Init(const std::string &path, bool isSendSTDOUT) {
         {"tcp", makeFileLogger("tcp")},
         {"ws", makeFileLogger("ws")},
         {"http", makeFileLogger("http")},
+        {"mqtt", makeFileLogger("mqtt")},
     };
 
-    SetPatternAll("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+    //[%s:%#] 输出调用点的 文件名:行号（由 FmtString 在调用点捕获），对齐 zap AddCaller
+    SetPatternAll("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%s:%#] %v");
     SetLevelAll(level);
+}
+
+void LogHelper::Close() {
+    std::lock_guard<std::mutex> lock(initMtx_);
+    //刷盘所有 logger 后丢弃，文件句柄随 rotating_file_sink 析构关闭；
+    //业务类可能仍持有 logger 成员（log_），这里同时把等级置 off 使写入空转；
+    //GetLogger 返回 nullptr，宏调用同样安全空转
+    for (const auto &iter: loggers_) {
+        if (iter.second) {
+            iter.second->flush();
+            iter.second->set_level(spdlog::level::off);
+        }
+    }
+    loggers_.clear();
 }
 
 void LogHelper::SetPatternAll(const std::string &pattern) const {

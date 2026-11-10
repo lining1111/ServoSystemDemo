@@ -10,7 +10,7 @@
 #include "common/common.h"
 #include "common/proc.h"
 #include "config/config.h"
-#include "base/AsyncProc.hpp"
+#include "utils/AsyncProc.hpp"
 #include "logHelper/LogHelper.h"
 #include <thread>
 #include <utility>
@@ -58,7 +58,7 @@ namespace common {
         }
 
         static int ThreadProcessPkg(CommonHandler *local) {
-            LogHelper::Instance()->BizLog(spdlog::level::warn, "{} ThreadProcessPkg start", local->_name);
+            BIZ_LOG(spdlog::level::warn, "{} ThreadProcessPkg start", local->_name);
             while (local->_isRun) {
                 Poco::AutoPtr<MsgNotification> pNf = dynamic_cast<MsgNotification *>(local->_pkgs.
                     waitDequeueNotification());
@@ -80,12 +80,12 @@ namespace common {
                         auto iter = HandleRouter.find(keys);
                         if (iter != HandleRouter.end()) {
                             if (localConfig.isShowMsgType("COM")) {
-                                LogHelper::Instance()->BizLog(spdlog::level::info, "local process:{}", pkg);
+                                BIZ_LOG(spdlog::level::info, "local process:{}", pkg);
                             }
                             auto rsp_json = iter->second(code, guid, pkg);
                             local->SendBase(rsp_json);
                         } else {
-                            LogHelper::Instance()->BizLog(spdlog::level::err, "{} 最后没有对应的方法名:{},内容:{}",
+                            BIZ_LOG(spdlog::level::err, "{} 最后没有对应的方法名:{},内容:{}",
                                                           local->_name, code, pkg);
                             Com rsp;
                             rsp.guid = guid;
@@ -106,7 +106,7 @@ namespace common {
                     }
                 }
             }
-            LogHelper::Instance()->BizLog(spdlog::level::warn, "{} ThreadProcessPkg stop", local->_name);
+            BIZ_LOG(spdlog::level::warn, "{} ThreadProcessPkg stop", local->_name);
             return 0;
         }
 

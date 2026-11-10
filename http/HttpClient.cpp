@@ -19,6 +19,11 @@ std::string HttpClient::Get(const std::string &path,
     }
 
     auto res = cli.Get(path, _headers);
+    //连接失败等场景 httplib 返回空指针
+    if (res == nullptr) {
+        state = -1;
+        return "";
+    }
     state = res->status;
 
     return res->body;
@@ -33,6 +38,11 @@ std::string HttpClient::Post(const std::string &path,
     }
 
     auto res = cli.Post(path, _headers);
+    //连接失败等场景 httplib 返回空指针
+    if (res == nullptr) {
+        state = -1;
+        return "";
+    }
     state = res->status;
 
     return res->body;

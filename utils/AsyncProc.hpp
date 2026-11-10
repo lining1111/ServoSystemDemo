@@ -59,12 +59,12 @@ public:
     virtual ~AsyncProc() {
         delete _fsm;
         delete mtx;
-        LogHelper::Instance()->BizLog(spdlog::level::warn, "{} release", _name);
+        BIZ_LOG(spdlog::level::warn, "{} release", _name);
     }
 
     virtual void startBusiness() {
         _isRun = true;
-        LogHelper::Instance()->BizLog(spdlog::level::warn, "{} start business", _name);
+        BIZ_LOG(spdlog::level::warn, "{} start business", _name);
         t_stateMachine = std::thread(ThreadStateMachine, this);
     }
 
@@ -76,7 +76,7 @@ public:
             t_stateMachine.join();
         }
 
-        LogHelper::Instance()->BizLog(spdlog::level::warn, "{} stop business", _name);
+        BIZ_LOG(spdlog::level::warn, "{} stop business", _name);
     }
 
     virtual void Action() = 0;
@@ -84,7 +84,7 @@ public:
     // static int ThreadStateMachine(AsyncProc *local);//子类也要实现
 private:
     static int ThreadStateMachine(AsyncProc *local) {
-        LogHelper::Instance()->BizLog(spdlog::level::warn, "{} {} start", local->_name, __FUNCTION__);
+        BIZ_LOG(spdlog::level::warn, "{} {} start", local->_name, __FUNCTION__);
         local->_pkgCache.clear();
         while (local->_isRun) {
             if (local->_fsm->WaitTriggerAction()) {
@@ -93,7 +93,7 @@ private:
                 }
             }
         }
-        LogHelper::Instance()->BizLog(spdlog::level::warn, "{} {} stop", local->_name, __FUNCTION__);
+        BIZ_LOG(spdlog::level::warn, "{} {} stop", local->_name, __FUNCTION__);
         return 0;
     }
 };

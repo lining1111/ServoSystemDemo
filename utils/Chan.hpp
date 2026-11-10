@@ -12,8 +12,10 @@
 #include <optional>
 #include <variant>
 #include <thread>
+#include <atomic>
 #include <chrono>
 #include <stdexcept>
+#include <utility>
 
 /**
  * 仿 Go 语言的 channel 实现
@@ -25,12 +27,18 @@ public:
     /**
      * 构造 channel
      * @param capacity 缓冲区大小，0 表示无缓冲（同步），>0 表示有缓冲
+     * @param name 通道名称，用于监控打印标识
      */
-    explicit Chan(size_t capacity = 0)
-        : capacity_(capacity), closed_(false),
+    explicit Chan(size_t capacity = 0, std::string name = "chan")
+        : capacity_(capacity), closed_(false), name_(std::move(name)),
           storage_(capacity > 0
                        ? std::variant<QueueStorage, SlotStorage>(std::in_place_type<QueueStorage>, capacity)
                        : std::variant<QueueStorage, SlotStorage>(std::in_place_type<SlotStorage>)) {
+    }
+
+    ~Chan() {
+        //析构时停止监控线程，避免线程悬空
+        SetMonitor(false);
     }
 
     // 禁止拷贝和赋值
@@ -144,11 +152,67 @@ public:
         return closed_;
     }
 
+    /** 当前通道内的元素个数（无缓冲通道为 0 或 1） */
+    size_t size() {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (capacity_ > 0) {
+            return std::get<QueueStorage>(storage_).queue.size();
+        }
+        return std::get<SlotStorage>(storage_).slot.has_value() ? 1 : 0;
+    }
+
+    /**
+     * 开启/关闭容量监控
+     * 开启后启动后台线程，周期性检查通道内元素个数，发生变化时以覆盖方式打印到控制台：
+     *   [chanName] 3/10
+     * @param enable true 开启 false 关闭
+     * @param intervalMs 检查间隔，默认 500ms
+     */
+    void SetMonitor(bool enable, int intervalMs = 500) {
+        std::lock_guard<std::mutex> lock(monitorMtx_);
+        if (enable == monitorEnabled_) {
+            return;
+        }
+        monitorEnabled_ = enable;
+        if (enable) {
+            monitorThread_ = std::thread([this, intervalMs] {
+                MonitorLoop(intervalMs);
+            });
+        } else {
+            if (monitorThread_.joinable()) {
+                monitorThread_.join();
+            }
+        }
+    }
+
+    /** 通道名称 */
+    std::string name() const {
+        return name_;
+    }
+
 private:
+    //监控循环：元素个数变化时覆盖打印
+    void MonitorLoop(int intervalMs) {
+        size_t lastSize = SIZE_MAX;
+        while (monitorEnabled_) {
+            size_t cur = size();
+            if (cur != lastSize) {
+                //\r 回到行首，\033[K 清除到行尾，实现同行覆盖打印
+                std::cout << "\r\033[K[" << name_ << "] " << cur << "/" << capacity_ << std::flush;
+                lastSize = cur;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs));
+        }
+    }
+
     size_t capacity_; // 缓冲区大小，0 表示无缓冲
     bool closed_; // 关闭标志
+    std::string name_; // 通道名称
     mutable std::mutex mtx_; // 互斥锁
     std::condition_variable cv_; // 条件变量
+    std::mutex monitorMtx_; // 监控线程启停互斥锁
+    std::atomic<bool> monitorEnabled_{false}; // 监控开关
+    std::thread monitorThread_; // 监控线程
 
     // 有缓冲时的存储结构
     struct QueueStorage {

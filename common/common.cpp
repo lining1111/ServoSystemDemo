@@ -16,7 +16,7 @@ namespace common {
         try {
             json::decode(pkg, data);
         } catch (std::exception &e) {
-            LogHelper::Instance()->BizLog(spdlog::level::err, "{}", e.what());
+            BIZ_LOG(spdlog::level::err, "{}", e.what());
             return tie("", "", "");
         }
         return tie(data.guid, data.code, data.param);

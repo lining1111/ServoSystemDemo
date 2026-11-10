@@ -9,7 +9,6 @@
 #include "proc.h"
 #include "common.h"
 #include "config/config.h"
-#include "localBusiness/localBusiness.h"
 #include "logHelper/LogHelper.h"
 #include <fmt/core.h>
 #include <fmt/ranges.h>
@@ -36,7 +35,7 @@ void CacheTimestamp::update(int index, uint64_t timestamp, int caches) {
                     dataTimestamps.push_back(timestamp);
                 } else {
                     if (timestamp <= dataTimestamps.back()) {
-                        LogHelper::Instance()->BizLog(spdlog::level::err,
+                        BIZ_LOG(spdlog::level::err,
                                                       "当前插入时间戳 {} 小于已插入的最新时间戳 {}，将恢复到最初状态",
                                                       timestamp, dataTimestamps.back());
                         dataTimestamps.clear();
@@ -50,7 +49,7 @@ void CacheTimestamp::update(int index, uint64_t timestamp, int caches) {
         }
         //After the cache frame is full, calculate the frame rate and set the flag.
         if (dataTimestamps.size() == caches) {
-            LogHelper::Instance()->BizLog(spdlog::level::warn, "动态帧率原始时间戳队列:{}",
+            BIZ_LOG(spdlog::level::warn, "动态帧率原始时间戳队列:{}",
                                           fmt::format("{}", dataTimestamps));
             std::vector<uint64_t> intervals;
             for (int i = 1; i < dataTimestamps.size(); i++) {
@@ -78,6 +77,40 @@ namespace common {
         return std::vector<std::string>(tokenizer.begin(), tokenizer.end());
     }
 
+    std::string ProcessPkg(const std::string &pkg) {
+        if (pkg.empty()) {
+            return "";
+        }
+        std::string guid, code, param;
+        std::tie(guid, code, param) = parseCom(pkg);
+
+        if (guid.empty()) {
+            guid = getGuid();
+        }
+
+        Com rsp;
+        if (!code.empty()) {
+            auto keys = split_path(code);
+            auto iter = HandleRouter.find(keys);
+            if (iter != HandleRouter.end()) {
+                if (localConfig.isShowMsgType("COM")) {
+                    BIZ_LOG(spdlog::level::info, "local process:{}", pkg);
+                }
+                return iter->second(code, guid, pkg);
+            }
+            BIZ_LOG(spdlog::level::err, "最后没有对应的方法名:{},内容:{}", code, pkg);
+            rsp.guid = guid;
+            rsp.code = code;
+            rsp.state = State_UnmarshalFail;
+            rsp.param = "code not find:" + code;
+        } else {
+            rsp.guid = guid;
+            rsp.state = State_UnmarshalFail;
+            rsp.param = "code empty";
+        }
+        return json::encode(rsp);
+    }
+
     //处理handle的基础模板类
     template<typename TReq, typename TRsp>
     class HandlerBase {
@@ -86,7 +119,7 @@ namespace common {
 
         // 统一处理入口
         std::string Process(const std::string &code, const std::string &guid, const std::string &req_json) {
-            LogHelper::Instance()->BizLog(spdlog::level::info, "Process code: {}, guid: {}, req_json: {}",
+            BIZ_LOG(spdlog::level::info, "Process code: {}, guid: {}, req_json: {}",
                                           code, guid, req_json);
             TReq req;
             // 1. 请求解码 —— 失败直接返回错误回复
