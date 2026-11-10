@@ -8,8 +8,8 @@
 #include <memory>
 #include <string>
 #include "mqtt/async_client.h"
-#include "logHelper/LogHelper.h"
-#include "utils/Chan.hpp"
+#include "logHelper/logHelper.h"
+#include "utils/chan.hpp"
 
 using namespace std;
 
@@ -26,7 +26,7 @@ public:
     } Config;
 
     mqtt::async_client *_client;
-    Chan<std::string> *_chan;
+    chan<std::string> *_chan;
 
 private:
     mqtt::connect_options _connectOptions{};

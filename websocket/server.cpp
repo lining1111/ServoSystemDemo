@@ -2,14 +2,14 @@
 // Created by lining on 12/27/24.
 //
 
-#include "Server.h"
+#include "server.h"
 
-#include "logHelper/LogHelper.h"
+#include "logHelper/logHelper.h"
 #include "utils/utils.h"
 
 namespace websocket {
 
-RequestHandler::RequestHandler(Server *server) : server_(server) {
+RequestHandler::RequestHandler(server *server) : server_(server) {
     //获取 ws 模块日志 handler
     log_ = LogHelper::Instance()->GetLogger("ws");
     recvBuf = new char[1024 * 1024];
@@ -110,12 +110,12 @@ int RequestHandler::SendBase(std::string pkg) {
     return ret;
 }
 
-Server::Server(const int port) : _port(port) {
+server::server(const int port) : _port(port) {
     //获取 ws 模块日志 handler
     log_ = LogHelper::Instance()->GetLogger("ws");
 }
 
-Server::~Server() {
+server::~server() {
     if (srv != nullptr) {
         srv->stop();
         delete srv;
@@ -123,7 +123,7 @@ Server::~Server() {
     LOG_TO(log_, spdlog::level::warn, "websocket server:{} close", _port);
 }
 
-int Server::Open() {
+int server::Open() {
     try {
         srv = new Poco::Net::HTTPServer(new Handler(this), _port);
     } catch (Poco::Exception &e) {
@@ -135,7 +135,7 @@ int Server::Open() {
     return 0;
 }
 
-int Server::ReOpen() {
+int server::ReOpen() {
     try {
         srv = new Poco::Net::HTTPServer(new Handler(this), _port);
     } catch (Poco::Exception &e) {
@@ -147,7 +147,7 @@ int Server::ReOpen() {
     return 0;
 }
 
-int Server::Close() {
+int server::Close() {
     isListen = false;
     if (srv != nullptr) {
         srv->stop();
@@ -159,12 +159,12 @@ int Server::Close() {
     return 0;
 }
 
-void Server::SetPkgFun(const std::function<std::string(const std::string &pkg)> &fun) {
+void server::SetPkgFun(const std::function<std::string(const std::string &pkg)> &fun) {
     std::lock_guard<std::mutex> lock(pkgFun_mutex_);
     pkgFun_ = fun;
 }
 
-std::string Server::OnPkg(const std::string &pkg) {
+std::string server::OnPkg(const std::string &pkg) {
     std::function<std::string(const std::string &pkg)> fun;
     {
         std::lock_guard<std::mutex> lock(pkgFun_mutex_);
@@ -177,27 +177,27 @@ std::string Server::OnPkg(const std::string &pkg) {
     return fun(pkg);
 }
 
-void Server::AddClient(const std::string &name, RequestHandler *handler, WebSocket *ws) {
+void server::AddClient(const std::string &name, RequestHandler *handler, WebSocket *ws) {
     std::lock_guard<std::mutex> lock(clients_mutex);
     clients[name] = {handler, ws, getTimestampMs()};
 }
 
-bool Server::RemoveClient(const std::string &name) {
+bool server::RemoveClient(const std::string &name) {
     std::lock_guard<std::mutex> lock(clients_mutex);
     return clients.erase(name) > 0;
 }
 
-bool Server::HasClient(const std::string &name) {
+bool server::HasClient(const std::string &name) {
     std::lock_guard<std::mutex> lock(clients_mutex);
     return clients.find(name) != clients.end();
 }
 
-int Server::GetClientCount() {
+int server::GetClientCount() {
     std::lock_guard<std::mutex> lock(clients_mutex);
     return static_cast<int>(clients.size());
 }
 
-std::vector<std::string> Server::GetClientNames() {
+std::vector<std::string> server::GetClientNames() {
     std::lock_guard<std::mutex> lock(clients_mutex);
     std::vector<std::string> names;
     names.reserve(clients.size());
@@ -207,7 +207,7 @@ std::vector<std::string> Server::GetClientNames() {
     return names;
 }
 
-int Server::SendToClient(const std::string &name, const std::string &data) {
+int server::SendToClient(const std::string &name, const std::string &data) {
     RequestHandler *handler = nullptr;
     {
         std::lock_guard<std::mutex> lock(clients_mutex);
@@ -225,7 +225,7 @@ int Server::SendToClient(const std::string &name, const std::string &data) {
     return handler->SendBase(data) == 0 ? 0 : -1;
 }
 
-int Server::SendToAllClients(const std::string &data) {
+int server::SendToAllClients(const std::string &data) {
     //先做快照，发送期间不持锁
     std::vector<std::pair<std::string, RequestHandler *>> snapshot;
     {
@@ -244,7 +244,7 @@ int Server::SendToAllClients(const std::string &data) {
     return okCount;
 }
 
-void Server::CloseAllClients() {
+void server::CloseAllClients() {
     std::lock_guard<std::mutex> lock(clients_mutex);
     for (auto &iter: clients) {
         if (iter.second.ws == nullptr) {
@@ -266,7 +266,7 @@ void Server::CloseAllClients() {
     clients.clear();
 }
 
-void Server::TouchClient(const std::string &name) {
+void server::TouchClient(const std::string &name) {
     std::lock_guard<std::mutex> lock(clients_mutex);
     auto iter = clients.find(name);
     if (iter != clients.end()) {
@@ -274,7 +274,7 @@ void Server::TouchClient(const std::string &name) {
     }
 }
 
-void Server::KickoffTimeoutClients(uint64_t now, uint64_t timeout) {
+void server::KickoffTimeoutClients(uint64_t now, uint64_t timeout) {
     std::vector<std::pair<std::string, WebSocket *>> stale;
     {
         std::lock_guard<std::mutex> lock(clients_mutex);

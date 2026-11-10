@@ -2,7 +2,7 @@
 // Created by lining on 2023/8/21.
 //
 
-#include "Client.h"
+#include "client.h"
 
 #include <utility>
 
@@ -10,7 +10,7 @@
 
 namespace tcp {
 
-Client::Client(std::string serverip, int serverport) : server_ip(std::move(serverip)),
+client::client(std::string serverip, int serverport) : server_ip(std::move(serverip)),
                                                              server_port(serverport) {
     //获取 tcp 模块日志 handler
     log_ = LogHelper::Instance()->GetLogger("tcp");
@@ -25,13 +25,13 @@ Client::Client(std::string serverip, int serverport) : server_ip(std::move(serve
     _isRun = true;
 }
 
-Client::~Client() {
+client::~client() {
     LOG_TO(log_, spdlog::level::warn, "{} disconnected", _name);
 
     _isRun = false;
     try {
-        _reactor.removeEventHandler(socket_, Observer<Client, ReadableNotification>(*this,
-                                        &Client::onReadable));
+        _reactor.removeEventHandler(socket_, Observer<client, ReadableNotification>(*this,
+                                        &client::onReadable));
     } catch (Poco::Exception &e) {
         LOG_TO(log_, spdlog::level::err, "{}", e.displayText());
     }
@@ -49,7 +49,7 @@ Client::~Client() {
     delete[] recvBuf;
 }
 
-int Client::Open() {
+int client::Open() {
     SocketAddress sa(server_ip, server_port);
     try {
         Poco::Timespan ts(1000 * 1000);
@@ -77,8 +77,8 @@ int Client::Open() {
     socket_.setLinger(true, 0);
 
     try {
-        _reactor.addEventHandler(socket_, Observer<Client, ReadableNotification>(*this,
-                                     &Client::onReadable));
+        _reactor.addEventHandler(socket_, Observer<client, ReadableNotification>(*this,
+                                     &client::onReadable));
     } catch (Poco::Exception &e) {
         LOG_TO(log_, spdlog::level::err, "{}", e.displayText());
     }
@@ -87,7 +87,7 @@ int Client::Open() {
     return 0;
 }
 
-int Client::Reconnect() {
+int client::Reconnect() {
     socket_.close();
     SocketAddress sa(server_ip, server_port);
     try {
@@ -116,8 +116,8 @@ int Client::Reconnect() {
     socket_.setLinger(true, 0);
 
     try {
-        _reactor.addEventHandler(socket_, Observer<Client, ReadableNotification>(*this,
-                                     &Client::onReadable));
+        _reactor.addEventHandler(socket_, Observer<client, ReadableNotification>(*this,
+                                     &client::onReadable));
     } catch (Poco::Exception &e) {
         LOG_TO(log_, spdlog::level::err, "{}", e.displayText());
     }
@@ -126,14 +126,14 @@ int Client::Reconnect() {
     return 0;
 }
 
-int Client::Run() {
+int client::Run() {
     _t.start(_reactor);
     _tHeartbeat = std::thread(ThreadHeartbeat, this);
 
     return 0;
 }
 
-int Client::SendBase(std::string pkg) {
+int client::SendBase(std::string pkg) {
     int ret = 0;
     std::unique_lock<std::mutex> lock(send_mutex_);
     if (pkg.empty()) {
@@ -163,12 +163,12 @@ int Client::SendBase(std::string pkg) {
     return ret;
 }
 
-void Client::SetPkgFun(const std::function<std::string(const std::string &pkg)> &fun) {
+void client::SetPkgFun(const std::function<std::string(const std::string &pkg)> &fun) {
     std::lock_guard<std::mutex> lock(pkgFun_mutex_);
     pkgFun_ = fun;
 }
 
-std::string Client::OnPkg(const std::string &pkg) {
+std::string client::OnPkg(const std::string &pkg) {
     std::function<std::string(const std::string &pkg)> fun;
     {
         std::lock_guard<std::mutex> lock(pkgFun_mutex_);
@@ -181,7 +181,7 @@ std::string Client::OnPkg(const std::string &pkg) {
     return fun(pkg);
 }
 
-void Client::onReadable(ReadableNotification *pNf) {
+void client::onReadable(ReadableNotification *pNf) {
     pNf->release();
     if (isNeedReconnect) {
         return;
@@ -210,7 +210,7 @@ void Client::onReadable(ReadableNotification *pNf) {
     }
 }
 
-void Client::ThreadHeartbeat(Client *local) {
+void client::ThreadHeartbeat(client *local) {
     LOG_TO(local->log_, spdlog::level::warn, "{} heartbeat thread start", local->_name);
     while (local->_isRun) {
         std::this_thread::sleep_for(5s);

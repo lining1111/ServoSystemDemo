@@ -2,7 +2,7 @@
 // Created by lining on 2/16/22.
 //
 
-#include "CRC.h"
+#include "crc.h"
 
 
 uint8_t Crc8Cal(uint8_t *data, uint32_t length, uint8_t poly, uint8_t init, uint8_t xorout, uint8_t reversed) {

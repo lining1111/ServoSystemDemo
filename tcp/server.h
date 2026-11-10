@@ -11,8 +11,8 @@
 #include <string>
 #include <vector>
 
-#include "Helper.hpp"
-#include "logHelper/LogHelper.h"
+#include "helper.hpp"
+#include "logHelper/logHelper.h"
 #include "Poco/Net/SocketReactor.h"
 #include "Poco/Net/SocketNotification.h"
 #include "Poco/Net/SocketConnector.h"
@@ -41,7 +41,7 @@ using Poco::Net::NetException;
 
 
 namespace tcp {
-class Server;
+class server;
 
 //TCP 服务端连接处理器：一个客户端连接对应一个实例
 //构造时登记到所属 Server 的 clients，析构时注销（参考 GigECameraTest/tcpServer/Server）
@@ -55,15 +55,15 @@ public:
 
 private:
     //所属服务器：构造时登记到 clients，析构时注销
-    Server *server_ = nullptr;
+    server *server_ = nullptr;
     //模块日志 handler（tcp.log）
     std::shared_ptr<spdlog::logger> log_;
     //分包与轮询处理辅助类（与 Client 共用）
-    Helper helper_;
+    helper helper_;
     std::mutex send_mutex_;
 
 public:
-    explicit ServerHandler(const StreamSocket &socket, Server *server = nullptr);
+    explicit ServerHandler(const StreamSocket &socket, server *server = nullptr);
 
     ~ServerHandler() override;
 
@@ -76,7 +76,7 @@ public:
 
 class ConnectionFactory final : public Poco::Net::TCPServerConnectionFactory {
 public:
-    explicit ConnectionFactory(Server *server = nullptr) : server_(server) {
+    explicit ConnectionFactory(server *server = nullptr) : server_(server) {
     }
 
     Poco::Net::TCPServerConnection *createConnection(const StreamSocket &socket) override {
@@ -84,11 +84,11 @@ public:
     }
 
 private:
-    Server *server_ = nullptr;
+    server *server_ = nullptr;
 };
 
 
-class Server {
+class server {
     friend class ServerHandler;
 
 public:
@@ -105,9 +105,9 @@ public:
     Poco::Net::TCPServer *srv = nullptr;
 
 public:
-    explicit Server(int port);
+    explicit server(int port);
 
-    ~Server();
+    ~server();
 
     int Open();
 

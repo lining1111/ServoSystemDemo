@@ -21,7 +21,7 @@ mqtt::async_client *MQTT::newClient(Config config) {
 
 void MQTT::init(int cacheSize) {
     //Chan 以 clientID 作为名称，便于监控时区分来源
-    _chan = new Chan<std::string>(cacheSize, _config.clientID);
+    _chan = new chan<std::string>(cacheSize, _config.clientID);
     _client = newClient(_config);
     _connectOptions.set_clean_session(true);
     _connectOptions.set_keep_alive_interval(20);

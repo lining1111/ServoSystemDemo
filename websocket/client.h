@@ -17,7 +17,7 @@
 #include "Poco/Net/HTTPClientSession.h"
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPResponse.h>
-#include "logHelper/LogHelper.h"
+#include "logHelper/logHelper.h"
 #include "spdlog/spdlog.h"
 
 using Poco::Net::WebSocket;
@@ -27,7 +27,7 @@ using Poco::Net::HTTPResponse;
 
 
 namespace websocket {
-class Client {
+class client {
 public:
     std::string server_ip;
     int server_port;
@@ -39,9 +39,9 @@ public:
     std::thread _tHeartbeat;
 
 public:
-    Client(std::string serverip, int serverport);
+    client(std::string serverip, int serverport);
 
-    ~Client();
+    ~client();
 
     int Open();
 
@@ -58,12 +58,12 @@ public:
     void SetPkgFun(const std::function<std::string(const std::string &pkg)> &fun);
 
 private:
-    static int ThreadRecv(Client *local);
+    static int ThreadRecv(client *local);
 
     //分发完整报文给处理回调，返回应答报文
     std::string OnPkg(const std::string &pkg);
 
-    static void ThreadHeartbeat(Client *local);
+    static void ThreadHeartbeat(client *local);
 
 private:
     HTTPClientSession *_cs = nullptr;

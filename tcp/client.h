@@ -19,9 +19,9 @@
 #include "Poco/Net/NetException.h"
 #include <Poco/Exception.h>
 #include "Poco/Observer.h"
-#include "logHelper/LogHelper.h"
+#include "logHelper/logHelper.h"
 #include "spdlog/spdlog.h"
-#include "Helper.hpp"
+#include "helper.hpp"
 
 using Poco::Net::SocketReactor;
 using Poco::Net::SocketConnector;
@@ -42,7 +42,7 @@ using Poco::TimeoutException;
 
 
 namespace tcp {
-class Client {
+class client {
 public:
     std::string server_ip;
     int server_port;
@@ -56,9 +56,9 @@ public:
     std::thread _tHeartbeat;
 
 public:
-    Client(std::string serverip, int serverport);
+    client(std::string serverip, int serverport);
 
-    ~Client();
+    ~client();
 
     int Open();
 
@@ -80,7 +80,7 @@ private:
     //分发完整报文给处理回调，返回应答报文
     std::string OnPkg(const std::string &pkg);
 
-    static void ThreadHeartbeat(Client *local);
+    static void ThreadHeartbeat(client *local);
 
 private:
     //模块日志 handler（tcp.log）
@@ -89,7 +89,7 @@ private:
     std::mutex pkgFun_mutex_;
     std::function<std::string(const std::string &pkg)> pkgFun_;
     //分包与轮询处理辅助类（与 Server 共用）
-    Helper helper_;
+    helper helper_;
 };
 
 } // namespace tcp

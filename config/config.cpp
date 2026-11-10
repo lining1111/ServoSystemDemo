@@ -5,7 +5,7 @@
 #include "config.h"
 #include "utils//utils.h"
 #include <fstream>
-#include "logHelper/LogHelper.h"
+#include "logHelper/logHelper.h"
 #include <Poco/Util/Application.h>
 #include <Poco/AutoPtr.h>
 #include <Poco/Util/IniFileConfiguration.h>

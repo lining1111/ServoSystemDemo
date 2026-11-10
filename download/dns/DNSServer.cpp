@@ -26,7 +26,7 @@
 #endif
 
 #include <vector>
-#include "logHelper/LogHelper.h"
+#include "logHelper/logHelper.h"
 #include <mutex>
 #include <thread>
 

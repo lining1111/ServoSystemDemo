@@ -11,7 +11,7 @@
 #include "common/proc.h"
 #include "config/config.h"
 #include "utils/AsyncProc.hpp"
-#include "logHelper/LogHelper.h"
+#include "logHelper/logHelper.h"
 #include <thread>
 #include <utility>
 #include <vector>

@@ -21,7 +21,7 @@
 #include "Poco/Net/WebSocket.h"
 #include "Poco/Net/NetException.h"
 #include "Poco/Net/HTTPRequestHandler.h"
-#include "logHelper/LogHelper.h"
+#include "logHelper/logHelper.h"
 #include <Poco/Net/HTTPRequestHandlerFactory.h>
 #include <Poco/Net/HTTPServer.h>
 
@@ -34,7 +34,7 @@ using namespace std;
 
 namespace websocket {
 
-class Server;
+class server;
 
 //websocket 连接处理器：一个客户端连接对应一个实例
 //构造时登记到所属 Server 的 clients，析构时注销（与 tcp::Server 模式一致）
@@ -48,13 +48,13 @@ public:
 
 private:
     //所属服务器：构造时登记到 clients，析构时注销
-    Server *server_ = nullptr;
+    server *server_ = nullptr;
     //模块日志 handler（ws.log）
     std::shared_ptr<spdlog::logger> log_;
     std::mutex sendMtx_;
 
 public:
-    explicit RequestHandler(Server *server = nullptr);
+    explicit RequestHandler(server *server = nullptr);
 
     ~RequestHandler() override;
 
@@ -66,7 +66,7 @@ public:
 
 class Handler final : public HTTPRequestHandlerFactory {
 public:
-    explicit Handler(Server *server = nullptr) : server_(server) {
+    explicit Handler(server *server = nullptr) : server_(server) {
     }
 
     HTTPRequestHandler *createRequestHandler(const HTTPServerRequest &request) final {
@@ -74,11 +74,11 @@ public:
     }
 
 private:
-    Server *server_ = nullptr;
+    server *server_ = nullptr;
 };
 
 
-class Server {
+class server {
     friend class RequestHandler;
 
 public:
@@ -97,9 +97,9 @@ public:
     Poco::Net::HTTPServer *srv = nullptr;
 
 public:
-    explicit Server(int port);
+    explicit server(int port);
 
-    ~Server();
+    ~server();
 
     int Open();
 

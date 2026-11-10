@@ -5,7 +5,7 @@
 #ifndef DOWNLOAD_H
 #define DOWNLOAD_H
 
-#include "logHelper/LogHelper.h"
+#include "logHelper/logHelper.h"
 #include <fstream>
 #include <iomanip>
 #include <openssl/md5.h>

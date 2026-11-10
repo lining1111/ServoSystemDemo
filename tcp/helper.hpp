@@ -15,7 +15,7 @@
 
 
 namespace tcp {
-class Helper {
+class helper {
 public:
     //报文处理回调：入参为去掉包尾'*'的报文，返回应答报文(空表示不应答)
     using PkgFun = std::function<std::string(const std::string &pkg)>;

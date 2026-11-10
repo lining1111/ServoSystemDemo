@@ -9,14 +9,14 @@
 #include <thread>
 #include <gflags/gflags.h>
 #include <Poco/Path.h>
-#include "logHelper/LogHelper.h"
+#include "logHelper/logHelper.h"
 #include "utils/utils.h"
 #include "config/config.h"
 #include "common/proc.h"
-#include "tcp/Server.h"
-#include "tcp/Client.h"
-#include "websocket/Server.h"
-#include "websocket/Client.h"
+#include "tcp/server.h"
+#include "tcp/client.h"
+#include "websocket/server.h"
+#include "websocket/client.h"
 
 DEFINE_bool(isSendSTDOUT, false, "输出到控制台，默认false");
 DEFINE_string(logDir, "log", "日志的输出目录,默认log");
@@ -37,17 +37,17 @@ protected:
         };
 
         //根据配置启动相应的服务/客户端
-        shared_ptr<tcp::Server> tcpServer;
-        shared_ptr<tcp::Client> tcpClient;
-        shared_ptr<websocket::Server> wsServer;
-        shared_ptr<websocket::Client> wsClient;
+        shared_ptr<tcp::server> tcpServer;
+        shared_ptr<tcp::client> tcpClient;
+        shared_ptr<websocket::server> wsServer;
+        shared_ptr<websocket::client> wsClient;
 
         //本地 tcp server
         {
             const auto &config = localConfig._config.localTcpServer;
             if (config.isUse) {
                 BIZ_LOG(spdlog::level::warn, "开启本地tcp server通信:{}:{}", config.name, config.port);
-                tcpServer = make_shared<tcp::Server>(config.port);
+                tcpServer = make_shared<tcp::server>(config.port);
                 tcpServer->SetPkgFun(pkgFun);
                 if (tcpServer->Open() != 0) {
                     BIZ_LOG(spdlog::level::err, "tcp server {}:{} 启动失败", config.name, config.port);
@@ -60,7 +60,7 @@ protected:
             const auto &config = localConfig._config.remoteTcpServer;
             if (config.isUse) {
                 BIZ_LOG(spdlog::level::warn, "开启远程tcp client通信:{}:{}:{}", config.name, config.ip, config.port);
-                tcpClient = make_shared<tcp::Client>(config.ip, config.port);
+                tcpClient = make_shared<tcp::client>(config.ip, config.port);
                 tcpClient->SetPkgFun(pkgFun);
                 if (tcpClient->Open() != 0) {
                     BIZ_LOG(spdlog::level::err, "tcp client {}:{}:{} 首次连接失败,等待自动重连",
@@ -75,7 +75,7 @@ protected:
             const auto &config = localConfig._config.localWSServer;
             if (config.isUse) {
                 BIZ_LOG(spdlog::level::warn, "开启本地ws server通信:{}:{}", config.name, config.port);
-                wsServer = make_shared<websocket::Server>(config.port);
+                wsServer = make_shared<websocket::server>(config.port);
                 wsServer->SetPkgFun(pkgFun);
                 if (wsServer->Open() != 0) {
                     BIZ_LOG(spdlog::level::err, "ws server {}:{} 启动失败", config.name, config.port);
@@ -88,7 +88,7 @@ protected:
             const auto &config = localConfig._config.remoteWSServer;
             if (config.isUse) {
                 BIZ_LOG(spdlog::level::warn, "开启远程ws client通信:{}:{}:{}", config.name, config.ip, config.port);
-                wsClient = make_shared<websocket::Client>(config.ip, config.port);
+                wsClient = make_shared<websocket::client>(config.ip, config.port);
                 wsClient->SetPkgFun(pkgFun);
                 if (wsClient->Open() != 0) {
                     BIZ_LOG(spdlog::level::err, "ws client {}:{}:{} 首次连接失败,等待自动重连",

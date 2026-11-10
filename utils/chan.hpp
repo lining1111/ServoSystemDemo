@@ -22,29 +22,29 @@
  * @tparam T 通道中传输的数据类型
  */
 template<typename T>
-class Chan {
+class chan {
 public:
     /**
      * 构造 channel
      * @param capacity 缓冲区大小，0 表示无缓冲（同步），>0 表示有缓冲
      * @param name 通道名称，用于监控打印标识
      */
-    explicit Chan(size_t capacity = 0, std::string name = "chan")
+    explicit chan(size_t capacity = 0, std::string name = "chan")
         : capacity_(capacity), closed_(false), name_(std::move(name)),
           storage_(capacity > 0
                        ? std::variant<QueueStorage, SlotStorage>(std::in_place_type<QueueStorage>, capacity)
                        : std::variant<QueueStorage, SlotStorage>(std::in_place_type<SlotStorage>)) {
     }
 
-    ~Chan() {
+    ~chan() {
         //析构时停止监控线程，避免线程悬空
         SetMonitor(false);
     }
 
     // 禁止拷贝和赋值
-    Chan(const Chan &) = delete;
+    chan(const chan &) = delete;
 
-    Chan &operator=(const Chan &) = delete;
+    chan &operator=(const chan &) = delete;
 
     /**
      * 发送数据到 channel

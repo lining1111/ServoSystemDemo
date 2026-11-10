@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
-#include "logHelper/LogHelper.h"
+#include "logHelper/logHelper.h"
 #include "utils/utils.h"
 #include <Poco/NotificationQueue.h>
 

@@ -6,8 +6,8 @@
 
 #include <thread>
 
-#include "websocket/Server.h"
-#include "logHelper/LogHelper.h"
+#include "websocket/server.h"
+#include "logHelper/logHelper.h"
 
 int main(int argc, char **argv) {
     int port = argc > 1 ? std::stoi(argv[1]) : 10001;
@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
 
     LogHelper::Instance()->Init("log", true);
 
-    websocket::Server srv(port);
+    websocket::server srv(port);
     srv.SetPkgFun([](const std::string &pkg) -> std::string {
         return "echo:" + pkg;
     });

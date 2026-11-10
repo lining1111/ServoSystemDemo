@@ -2,11 +2,11 @@
 // Created by lining on 2026/4/22.
 //
 
-#include "utils/Chan.hpp"
+#include "utils/chan.hpp"
 // ------------------ 示例代码 ------------------
 int main() {
     // 示例1：无缓冲 channel，同步通信
-    Chan<int> unbuffered{0};
+    chan<int> unbuffered{0};
     std::thread sender([&] {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         bool ok = unbuffered.send(42);
@@ -18,7 +18,7 @@ int main() {
     sender.join();
 
     // 示例2：有缓冲 channel，缓冲区大小3
-    Chan<std::string> buffered{3};
+    chan<std::string> buffered{3};
     buffered.send("hello");
     buffered.send("world");
     buffered.send("!");
@@ -40,7 +40,7 @@ int main() {
     sender2.join();
 
     // 示例3：关闭 channel，接收剩余数据
-    Chan<double> ch{2};
+    chan<double> ch{2};
     ch.send(1.1);
     ch.send(2.2);
     ch.close();     // 关闭后不能再发送

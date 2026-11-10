@@ -9,7 +9,7 @@
 #include "proc.h"
 #include "common.h"
 #include "config/config.h"
-#include "logHelper/LogHelper.h"
+#include "logHelper/logHelper.h"
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 #include "utils/utils.h"

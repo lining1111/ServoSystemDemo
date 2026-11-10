@@ -7,8 +7,8 @@
 #include <iostream>
 #include <thread>
 
-#include "websocket/Client.h"
-#include "logHelper/LogHelper.h"
+#include "websocket/client.h"
+#include "logHelper/logHelper.h"
 
 int main(int argc, char **argv) {
     std::string ip = argc > 1 ? argv[1] : "127.0.0.1";
@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
 
     LogHelper::Instance()->Init("log", true);
 
-    websocket::Client wsClient(ip, port);
+    websocket::client wsClient(ip, port);
     wsClient.SetPkgFun([](const std::string &pkg) -> std::string {
         std::cout << "recv rsp: " << pkg << std::endl;
         return "";

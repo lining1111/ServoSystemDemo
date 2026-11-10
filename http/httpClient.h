@@ -9,9 +9,9 @@
 #include <string>
 #include <map>
 
-class HttpClient {
+class httpClient {
 public:
-    explicit HttpClient(const std::string &host, int port = 80);
+    explicit httpClient(const std::string &host, int port = 80);
 
     std::string Get(const std::string &path,
                     const std::map<std::string, std::string> &header,
