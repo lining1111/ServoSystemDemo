@@ -14,44 +14,40 @@ LogHelper *LogHelper::Instance() {
 }
 
 void LogHelper::Init(const std::string &path, bool isSendSTDOUT) {
-    std::lock_guard<std::mutex> lock(initMtx_);
-    auto level = spdlog::level::debug;
     m_logPath = path;
-
-    //可重复调用：先刷盘并丢弃上一次的 logger（rotating_file_sink 析构时关闭文件句柄）
-    for (const auto &iter: loggers_) {
-        if (iter.second) {
-            iter.second->flush();
-        }
-    }
-    loggers_.clear();
-
     //控制台 sink：不输出到控制台时直接关闭，即使被文件 logger 挂载也不会输出
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-    console_sink->set_level(isSendSTDOUT ? level : spdlog::level::off);
+    console_sink->set_level(isSendSTDOUT ? spdlog::level::debug : spdlog::level::off);
 
-    //常规文件 logger（轮转文件：单文件10MB，最多保留5个），isSendSTDOUT 时挂载控制台 sink 同步上屏
-    auto makeFileLogger = [&](const std::string &name) -> std::shared_ptr<spdlog::logger> {
+    // key 为 logger 名称，value 为 (文件名, 最大文件大小)；文件名为空表示仅控制台
+    const std::map<std::string, std::tuple<std::string, size_t>> configs = {
+            {"biz",  {"biz.log",  1024 * 1024 * 10}},
+            {"tcp",  {"tcp.log",  1024 * 1024 * 10}},
+            {"ws",   {"ws.log",   1024 * 1024 * 10}},
+            {"http", {"http.log", 1024 * 1024}},
+            {"mqtt", {"mqtt.log", 1024 * 1024}},
+    };
+
+    //常规文件 logger，isSendSTDOUT 时挂载控制台 sink 同步上屏
+    auto makeFileLogger = [&](const std::string &name, const std::string &file, size_t maxSize)
+            -> std::shared_ptr<spdlog::logger> {
         auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-            m_logPath + "/" + name + ".log", 1024 * 1024 * 10, 5);
+                m_logPath + "/" + file, maxSize, 5);
         if (isSendSTDOUT) {
             return std::make_shared<spdlog::logger>(name, spdlog::sinks_init_list{file_sink, console_sink});
         }
         return std::make_shared<spdlog::logger>(name, file_sink);
     };
 
-    loggers_ = {
-        {"console", std::make_shared<spdlog::logger>("console", console_sink)},
-        {"biz", makeFileLogger("biz")},
-        {"tcp", makeFileLogger("tcp")},
-        {"ws", makeFileLogger("ws")},
-        {"http", makeFileLogger("http")},
-        {"mqtt", makeFileLogger("mqtt")},
-    };
+    loggers_ = {{"console", std::make_shared<spdlog::logger>("console", console_sink)}};
+    for (const auto &[key, cfg]: configs) {
+        const auto &[file, maxSize] = cfg;
+        loggers_[key] = makeFileLogger(key, file, maxSize);
+    }
 
-    //[%s:%#] 输出调用点的 文件名:行号（由 FmtString 在调用点捕获），对齐 zap AddCaller
+    //[%s:%#] 输出调用点的 文件名:行号（由 LOG_TO/各宏在调用点捕获 source_loc）
     SetPatternAll("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%s:%#] %v");
-    SetLevelAll(level);
+    SetLevelAll(spdlog::level::debug);
 }
 
 void LogHelper::Close() {
