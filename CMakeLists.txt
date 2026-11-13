@@ -3,31 +3,23 @@ project(ServoSystemDemo VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# 设置MSVC使用UTF-8
-if (MSVC)
-    # 方法1：全局设置
-    add_compile_options(/utf-8)
-
-    # 方法2：针对特定目标
-    # add_executable(my_target main.cpp)
-    # target_compile_options(my_target PRIVATE /utf-8)
-endif ()
-
-
 #cmake依赖
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 include(utility)
 
-# 用 scripts/gen_version.sh 把 git 信息固化成头文件 version_git.h
+# 用 scripts/gen_version.sh/bat 把 git 信息固化成头文件 version_git.h
 # 远程调试时远程机器上没有 .git，脚本会保留随源码同步过来的已有 version_git.h，
 # 从而把本地的分支/commit 带过去（ version.h 中 include 了该头文件）
-find_program(BASH_EXECUTABLE NAMES bash sh)
 set(GIT_BRANCH "unknown")
 set(GIT_COMMIT "unknown")
 set(GIT_COMMIT_TIME "unknown")
-if (BASH_EXECUTABLE)
+if (CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
+    # Windows：MSVC 使用 UTF-8 编码源文件，并执行 bat 版本脚本
+    if (MSVC)
+        add_compile_options(/utf-8)
+    endif ()
     execute_process(
-            COMMAND "${BASH_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/scripts/gen_version.sh"
+            COMMAND "cmd" "/c" "${PROJECT_SOURCE_DIR}/scripts/gen_version.bat"
             WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
             OUTPUT_VARIABLE GIT_INFO_OUTPUT
             ERROR_VARIABLE GIT_INFO_ERROR
@@ -35,19 +27,36 @@ if (BASH_EXECUTABLE)
             OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     if (NOT "${GIT_INFO_RESULT}" EQUAL 0)
-        message(STATUS "gen_version.sh 执行失败：${GIT_INFO_ERROR}")
+        message(STATUS "gen_version.bat 执行失败：${GIT_INFO_ERROR}")
         set(GIT_INFO_OUTPUT "")
     endif ()
-    # 脚本 stdout 形如 GIT_BRANCH=xxx / GIT_COMMIT=xxx / GIT_COMMIT_TIME=xxx
-    string(REPLACE "\n" ";" GIT_INFO_LINES "${GIT_INFO_OUTPUT}")
-    foreach (line ${GIT_INFO_LINES})
-        if (line MATCHES "^GIT_([A-Z_]+)=(.*)$")
-            set(GIT_${CMAKE_MATCH_1} "${CMAKE_MATCH_2}")
-        endif ()
-    endforeach ()
 else ()
-    message(STATUS "未找到 bash/sh，跳过 gen_version.sh，git 信息使用 version_git.h 中的已有值")
+    # Linux/macOS：执行 sh 版本脚本
+    find_program(BASH_EXECUTABLE NAMES bash sh)
+    if (BASH_EXECUTABLE)
+        execute_process(
+                COMMAND "${BASH_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/scripts/gen_version.sh"
+                WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                OUTPUT_VARIABLE GIT_INFO_OUTPUT
+                ERROR_VARIABLE GIT_INFO_ERROR
+                RESULT_VARIABLE GIT_INFO_RESULT
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if (NOT "${GIT_INFO_RESULT}" EQUAL 0)
+            message(STATUS "gen_version.sh 执行失败：${GIT_INFO_ERROR}")
+            set(GIT_INFO_OUTPUT "")
+        endif ()
+    else ()
+        message(STATUS "未找到 bash/sh，跳过 gen_version.sh，git 信息使用 version_git.h 中的已有值")
+    endif ()
 endif ()
+# 两平台脚本 stdout 格式相同：GIT_BRANCH=xxx / GIT_COMMIT=xxx / GIT_COMMIT_TIME=xxx
+string(REPLACE "\n" ";" GIT_INFO_LINES "${GIT_INFO_OUTPUT}")
+foreach (line ${GIT_INFO_LINES})
+    if (line MATCHES "^GIT_([A-Z_]+)=(.*)$")
+        set(GIT_${CMAKE_MATCH_1} "${CMAKE_MATCH_2}")
+    endif ()
+endforeach ()
 
 # 兜底：脚本没跑（如纯 Windows 环境）且文件不存在时写一份，保证能编译
 if (NOT EXISTS "${PROJECT_SOURCE_DIR}/version_git.h")

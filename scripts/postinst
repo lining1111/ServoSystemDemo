@@ -1,3 +1,0 @@
-chmod +x /opt/ServoSystemDemo
-chmod +x /etc/systemd/system/ServoSystemDemo.service
-systemctl enable ServoSystemDemo

@@ -5,7 +5,7 @@
 #define VERSION_GIT_H
 
 #define GIT_BRANCH "main"
-#define GIT_COMMIT "5f95767-dirty"
-#define GIT_COMMIT_TIME "2026-11-10T13:28:29+08:00"
+#define GIT_COMMIT "6e53326-dirty"
+#define GIT_COMMIT_TIME "2026-11-10T14:12:54+08:00"
 
 #endif // VERSION_GIT_H
