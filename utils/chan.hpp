@@ -134,6 +134,48 @@ public:
         cv_.notify_one(); // 唤醒可能等待的发送者
         return true;
     }
+    /**
+    * 非阻塞发送数据到 channel
+    * @param value 要发送的值
+    * @return true 表示发送成功；false 表示队列已满或 channel 已关闭（不等待、不丢已有数据）
+    */
+    bool try_send(const T &value) {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (closed_) return false;
+        if (capacity_ > 0) {
+            auto &qs = std::get<QueueStorage>(storage_);
+            if (qs.queue.size() >= qs.capacity) return false;
+            qs.queue.push(value);
+        } else {
+            auto &ss = std::get<SlotStorage>(storage_);
+            if (ss.slot.has_value()) return false;
+            ss.slot = value;
+        }
+        cv_.notify_one(); // 唤醒一个等待的接收者
+        return true;
+    }
+
+    /**
+     * 非阻塞接收数据
+     * @param out 用于存储接收到的值
+     * @return true 表示成功接收到数据；false 表示暂无数据（或已关闭且无剩余数据）
+     */
+    bool try_receive(T &out) {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (capacity_ > 0) {
+            auto &qs = std::get<QueueStorage>(storage_);
+            if (qs.queue.empty()) return false;
+            out = std::move(qs.queue.front());
+            qs.queue.pop();
+        } else {
+            auto &ss = std::get<SlotStorage>(storage_);
+            if (!ss.slot.has_value()) return false;
+            out = std::move(*ss.slot);
+            ss.slot = std::nullopt;
+        }
+        cv_.notify_one(); // 唤醒可能等待的发送者
+        return true;
+    }
 
     /**
      * 关闭 channel
